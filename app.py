@@ -22,14 +22,20 @@ def ensure_square(image):
 
 def add_timestamp_and_detection_count(image, detection_count):
     draw = ImageDraw.Draw(image)
-    # フォントの設定（システムフォントを使用）
+    # カスタムフォントのパスを設定
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    font_path = os.path.join(script_dir, "fonts", "DejaVuSansMono.ttf") 
+
+    # フォントの読み込み
     try:
-        font = ImageFont.truetype("arial.ttf", size=350)
+        font_size = 350  
+        font = ImageFont.truetype(font_path, size=font_size)
     except IOError:
+        st.warning("指定されたフォントが見つからないため、デフォルトフォントを使用します。")
         font = ImageFont.load_default()
     
     # ロゴ画像のパスを設定
-    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "img", "logo.png")
+    logo_path = os.path.join(script_dir, "img", "logo.png")
     
     y_offset = 10  # 初期のy座標
     
