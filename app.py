@@ -237,7 +237,7 @@ def run_application():
                     results = model(
                         source=final_image,
                         imgsz=input_size,
-                        line_width=2,
+                        line_width=1,
                         conf=conf_threshold,
                         iou=nms_threshold,
                         max_det=1000
