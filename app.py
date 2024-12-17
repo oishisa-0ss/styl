@@ -131,10 +131,26 @@ def run_application():
         st.session_state.full_resolution_image = None
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(script_dir, "best.pt")
-    if not os.path.exists(model_path):
-        st.error("学習モデルが見つかりません")
+    models_dir = os.path.join(script_dir, "models")  # モデルが保存されているディレクトリ
+    if not os.path.exists(models_dir):
+        st.error(f"モデルディレクトリが見つかりません: {models_dir}")
         sys.exit()
+    
+    # .ptファイルを取得
+    model_files = [f for f in os.listdir(models_dir) if f.endswith('.pt')]
+    if not model_files:
+        st.error("モデルファイル（.pt）が見つかりません")
+        sys.exit()
+    
+    # サイドバーでモデルを選択
+    selected_model = st.sidebar.selectbox(
+        "使用するモデルを選択",
+        options=model_files,
+        index=0,
+        help="使用するモデルを選択してください"
+    )
+    
+    model_path = os.path.join(models_dir, selected_model)
     model = YOLO(model_path)
 
     # サイドバーの設定
