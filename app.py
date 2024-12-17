@@ -28,7 +28,7 @@ def add_timestamp_and_detection_count(image, detection_count):
 
     # フォントの読み込み
     try:
-        font_size = 350  
+        font_size = 50  
         font = ImageFont.truetype(font_path, size=font_size)
     except IOError:
         st.warning("指定されたフォントが見つからないため、デフォルトフォントを使用します。")
