@@ -113,7 +113,23 @@ def show_home_page():
 def run_application():
     st.set_page_config(layout="centered", page_title=st.secrets["NAME"], page_icon="img/r.ico")
     st.title(st.secrets["TITLE"])
-    
+
+    # リセットボタンの処理を先に行う
+    if 'reset_triggered' not in st.session_state:
+        st.session_state.reset_triggered = False
+
+    if st.sidebar.button("初期値にリセット"):
+        st.session_state.reset_triggered = True
+        st.rerun()
+
+    # セッションステートの初期化（リセットされた場合）
+    if st.session_state.reset_triggered:
+        st.session_state.input_size = 1024
+        st.session_state.show_labels = False
+        st.session_state.conf_threshold = 0.20
+        st.session_state.nms_threshold = 0.45
+        st.session_state.reset_triggered = False
+
     # セッションステートの初期化
     if 'original_image' not in st.session_state:
         st.session_state.original_image = None
@@ -131,7 +147,7 @@ def run_application():
         st.session_state.full_resolution_image = None
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    models_dir = os.path.join(script_dir, "models")  # モデルが保存されているディレクトリ
+    models_dir = os.path.join(script_dir, "models") 
     if not os.path.exists(models_dir):
         st.error(f"モデルディレクトリが見つかりません: {models_dir}")
         sys.exit()
@@ -190,14 +206,6 @@ def run_application():
         step=0.05,
         help="NMSの閾値を設定します"
     )
-    
-    # 初期値にリセットするボタン
-    if st.sidebar.button("初期値にリセット"):
-        st.session_state.input_size = 1024
-        st.session_state.show_labels = False
-        st.session_state.conf_threshold = 0.20
-        st.session_state.nms_threshold = 0.45
-        st.experimental_rerun()
     
     # レスポンシブレイアウトの設定
     col1, col2 = st.columns([1, 3])
