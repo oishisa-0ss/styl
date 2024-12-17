@@ -201,7 +201,7 @@ def run_application():
     
     if st.session_state.full_resolution_image:
         st.subheader("切り抜き範囲を選択")
-        st.caption("画像をドラッグして正方形の範囲を選択してください")
+        st.caption("シャーレの囲うように切り抜き範囲を選択してください")
         st.caption("画像が見切れてしまう場合は画面を横回転にしてご利用下さい")
         
         image = st.session_state.full_resolution_image
