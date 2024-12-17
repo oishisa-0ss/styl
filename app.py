@@ -114,22 +114,6 @@ def run_application():
     st.set_page_config(layout="centered", page_title=st.secrets["NAME"], page_icon="img/r.ico")
     st.title(st.secrets["TITLE"])
 
-    # リセットボタンの処理を先に行う
-    if 'reset_triggered' not in st.session_state:
-        st.session_state.reset_triggered = False
-
-    if st.sidebar.button("初期値にリセット"):
-        st.session_state.reset_triggered = True
-        st.rerun()
-
-    # セッションステートの初期化（リセットされた場合）
-    if st.session_state.reset_triggered:
-        st.session_state.input_size = 1024
-        st.session_state.show_labels = False
-        st.session_state.conf_threshold = 0.20
-        st.session_state.nms_threshold = 0.45
-        st.session_state.reset_triggered = False
-
     # セッションステートの初期化
     if 'original_image' not in st.session_state:
         st.session_state.original_image = None
