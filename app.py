@@ -139,7 +139,7 @@ def run_application():
     # .ptファイルを取得
     model_files = [f for f in os.listdir(models_dir) if f.endswith('.pt')]
     if not model_files:
-        st.error("モデルファイル（.pt）が見つかりません")
+        st.error("モデルが見つかりません")
         sys.exit()
     
     # サイドバーでモデルを選択
@@ -245,8 +245,7 @@ def run_application():
             
             st.subheader("プレビュー")
             st.image(final_image, width=300)
-            
-            # 検出開始ボタン
+            st.write(f"現在選択中のモデル: {selected_model}")
             if st.button("検出開始"):
                 with st.spinner("検出中..."):
                     # YOLOに画像を渡して推論
