@@ -24,7 +24,7 @@ def add_timestamp_and_detection_count(image, detection_count):
     draw = ImageDraw.Draw(image)
     # フォントの設定（システムフォントを使用）
     try:
-        font = ImageFont.truetype("arial.ttf", size=80)
+        font = ImageFont.truetype("arial.ttf", size=350)
     except IOError:
         font = ImageFont.load_default()
     
