@@ -145,7 +145,9 @@ def run_application():
     if not model_files:
         st.error(st.secrets["MODEL_ERR"])
         sys.exit()
-    
+
+    st.sidebar.header("モデル選択")
+
     selected_model = st.sidebar.selectbox(
         "使用するモデルを選択",
         options=model_files,
