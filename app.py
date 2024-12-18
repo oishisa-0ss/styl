@@ -22,22 +22,19 @@ def ensure_square(image):
 
 def add_timestamp_and_detection_count(image, detection_count):
     draw = ImageDraw.Draw(image)
-    # カスタムフォントのパスを設定
     script_dir = os.path.dirname(os.path.abspath(__file__))
     font_path = os.path.join(script_dir, "fonts", "DejaVuSansMono.ttf") 
-
-    # フォントの読み込み
+    
     try:
         font_size = 60  
         font = ImageFont.truetype(font_path, size=font_size)
     except IOError:
-        st.warning("指定されたフォントが見つからないため、デフォルトフォントを使用します。")
+        st.warning(st.secrets["FONT_WARNING"])
         font = ImageFont.load_default()
     
-    # ロゴ画像のパスを設定
     logo_path = os.path.join(script_dir, "img", "logo.png")
     
-    y_offset = 10  # 初期のy座標
+    y_offset = 10  
     
     if os.path.exists(logo_path):
         try:
@@ -45,30 +42,23 @@ def add_timestamp_and_detection_count(image, detection_count):
             logo_size = (800, 800)
             logo.thumbnail(logo_size, Image.Resampling.LANCZOS)
             
-            # ロゴの位置（左上）
             position = (10, y_offset)
             
-            # 画像にロゴを貼り付け
             image.paste(logo, position, logo)
             
-            y_offset += logo.size[1] + 10  # ロゴの高さとマージンを追加
+            y_offset += logo.size[1] + 10
         except Exception as e:
-            st.warning(f"ロゴの埋め込みに失敗しました: {e}")
+            st.warning(st.secrets["LOGO_WANING"])
     
-    # タイムスタンプの取得
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    # テキストの内容
     text = f"{timestamp}\nCount: {detection_count}"
     
-    # テキストの位置
-    x, y = 10, y_offset  # 左上の余白
+    x, y = 10, y_offset  
     
-    # テキストの色とストロークの設定
-    text_color = (0, 0, 0)  # 黒
-    stroke_color = (255, 255, 255)  # 白
-    stroke_width = 2  # ストロークの太さ
+    text_color = (0, 0, 0)  
+    stroke_color = (255, 255, 255)  
+    stroke_width = 2  
 
-    # テキストを描画
     draw.text(
         (x, y),
         text,
@@ -81,7 +71,7 @@ def add_timestamp_and_detection_count(image, detection_count):
     return image
 
 def main():
-    # セッションステートの初期化
+
     if 'page' not in st.session_state:
         st.session_state.page = 'home'
 
@@ -91,8 +81,11 @@ def main():
         run_application()
 
 def show_home_page():
-    
-    # メイン画像の表示
+    st.set_page_config(
+        layout="centered",
+        page_title=st.secrets["NAME"],
+        page_icon="img/r.ico"
+    )
     script_dir = os.path.dirname(os.path.abspath(__file__))
     logo_image_path = os.path.join(script_dir, "img/logo.png")
     main_image_path = os.path.join(script_dir, "img/main.jpg")
@@ -103,18 +96,30 @@ def show_home_page():
         st.image(logo_image, use_container_width=True)
         st.image(main_image, use_container_width=True)
     else:
-        st.warning("メイン画像（main.jpg）が見つかりません")
+        st.warning(st.secrets["PIC_ERR"])
     
     st.markdown("<br><br>", unsafe_allow_html=True)
-    if st.button("使ってみる"):
+    if st.button(st.secrets["USE_BUTTON"]):
         st.session_state.page = 'app'
         st.rerun()
 
 def run_application():
-    st.set_page_config(layout="centered", page_title=st.secrets["NAME"], page_icon="img/r.ico")
+    st.set_page_config(
+        layout="centered",
+        page_title=st.secrets["NAME"],
+        page_icon="img/r.ico"
+    )
+    
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_image_path = os.path.join(script_dir, "img/logo.png")
+    if os.path.exists(logo_image_path):
+        logo_image = Image.open(logo_image_path)
+        st.image(logo_image, use_container_width=True)
+    else:
+        st.warning(st.secrets["PIC_ERR"])
+        
     st.title(st.secrets["TITLE"])
 
-    # セッションステートの初期化
     if 'original_image' not in st.session_state:
         st.session_state.original_image = None
     if 'detection_result' not in st.session_state:
@@ -133,68 +138,59 @@ def run_application():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     models_dir = os.path.join(script_dir, "models") 
     if not os.path.exists(models_dir):
-        st.error(f"モデルディレクトリが見つかりません: {models_dir}")
+        st.error(st.secrets["MODEL_DIRERR"])
         sys.exit()
     
-    # .ptファイルを取得
     model_files = [f for f in os.listdir(models_dir) if f.endswith('.pt')]
     if not model_files:
-        st.error("モデルが見つかりません")
+        st.error(st.secrets["MODEL_ERR"])
         sys.exit()
     
-    # サイドバーでモデルを選択
     selected_model = st.sidebar.selectbox(
         "使用するモデルを選択",
         options=model_files,
         index=0,
-        help="使用するモデルを選択してください"
+        help=st.secrets["MODEL_HELP"]
     )
     
     model_path = os.path.join(models_dir, selected_model)
     model = YOLO(model_path)
 
-    # サイドバーの設定
     st.sidebar.header("設定")
     
-    # 入力サイズの選択
     input_size = st.sidebar.selectbox(
         "入力サイズ",
         options=[640, 1024, 1280],
         key='input_size',
-        help="入力サイズが高いほど細かく検出します"
+        help=st.secrets["INPUT_HELP"]
     )
     
-    # ラベル表示のオンオフ
     show_labels = st.sidebar.checkbox(
         "ラベル表示",
         key='show_labels',
-        help="ラベル表示のオンオフです"
+        help=st.secrets["LABEL_HELP"]
     )
     
-    # conf下限値のスライダー
     conf_threshold = st.sidebar.slider(
         "conf下限値",
         min_value=0.05,
         max_value=0.70,
         key='conf_threshold',
         step=0.05,
-        help="conf下限値の閾値を設定します"
+        help=st.secrets["CONF_HELP"]
     )
     
-    # NMSのスライダー
     nms_threshold = st.sidebar.slider(
         "NMS",
         min_value=0.05,
         max_value=0.70,
         key='nms_threshold',
         step=0.05,
-        help="NMSの閾値を設定します"
+        help=st.secrets["NMS_HELP"]
     )
     
-    # レスポンシブレイアウトの設定
     col1, col2 = st.columns([1, 3])
 
-    # タブの作成
     tabs = st.tabs(["アップロード", "None"])
     
     with tabs[0]:
@@ -202,7 +198,7 @@ def run_application():
         uploaded_file = st.file_uploader(
             "JPG/PNG画像をアップロード",
             type=["jpg", "jpeg", "png"],
-            help=""
+            help=st.secrets["UPLOAD_HELP"]
         )
         if uploaded_file:
             original = Image.open(uploaded_file)
@@ -215,12 +211,11 @@ def run_application():
     
     if st.session_state.full_resolution_image:
         st.subheader("切り抜き範囲を選択")
-        st.caption("シャーレの全体を囲うように切り抜き範囲を選択してください")
-        st.caption("画像が見切れてしまう場合は画面を横回転にしてご利用下さい")
+        st.caption(st.secrets["CLOP_CAP1"])
+        st.caption(st.secrets["CLOP_CAP2"])
         
         image = st.session_state.full_resolution_image
         
-        # Cropperの設定
         cropped_image = st_cropper(
             image,
             realtime_update=True,
@@ -229,10 +224,7 @@ def run_application():
         )
         
         if cropped_image:
-            # クロップ後の画像が正方形であることを確認
             cropped_image = ensure_square(cropped_image)
-            
-            # クロップ画像のリサイズ
             final_image = cropped_image.resize((1800, 1800), Image.Resampling.LANCZOS)
             
             st.subheader("プレビュー")
@@ -240,7 +232,6 @@ def run_application():
             st.write(f"現在選択中のモデル: {selected_model}")
             if st.button("検出開始"):
                 with st.spinner("検出中..."):
-                    # YOLOに画像を渡して推論
                     results = model(
                         source=final_image,
                         imgsz=input_size,
@@ -250,22 +241,18 @@ def run_application():
                         max_det=1000
                     )
                     
-                    # 検出数の取得
                     num_detections = len(results[0].boxes)
                     st.success(f"検出数: {num_detections}")
                     
-                    # 検出結果の描画
                     if show_labels:
                         annotated_image = results[0].plot()
                     else:
                         annotated_image = results[0].plot(labels=False)  
                     
-                    # 色チャネルをBGRからRGBに変換
                     annotated_image = annotated_image[:, :, ::-1]
                     
                     annotated_pil = Image.fromarray(annotated_image)
                     
-                    # タイムスタンプと検出数を追加
                     annotated_pil = add_timestamp_and_detection_count(annotated_pil, num_detections)
                     
                     st.session_state.detection_result = annotated_pil
@@ -280,7 +267,7 @@ def run_application():
                     file_name=f"detected_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
                     mime="image/jpeg",
                     key="download-detection",
-                    help="検出結果の画像をダウンロードします",
+                    help=st.secrets["DOWNLOAD_HELP"],
                 )
             
     else:
@@ -289,14 +276,13 @@ def run_application():
     st.markdown(
         """
         <style>
-        /* 全体の背景と文字色 */
+       
         body {
-            background: #f0f2f6;
+            background: #e0f7e9; 
             color: #333333;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
 
-        /* タイトルのスタイル */
         .css-1v3fvcr {
             font-size: 2.5rem;
             color: #1B4F72;
@@ -305,14 +291,12 @@ def run_application():
             font-weight: bold;
         }
 
-        /* ヘッダーのスタイル */
         .css-18e3th9 {
             color: #2C3E50;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 1.2rem;
         }
 
-        /* ボタンのスタイル */
         .stButton button {
             background-color: #1B4F72;
             color: #FFFFFF;
@@ -333,7 +317,6 @@ def run_application():
             transform: scale(1.05);
         }
 
-        /* ダウンロードボタンのスタイル */
         #download-button {
             background-color: #16A085;
         }
@@ -341,7 +324,6 @@ def run_application():
             background-color: #148F77;
         }
 
-        /* ナビゲーションバーのスタイル */
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -362,18 +344,15 @@ def run_application():
             color: #AED6F1;
         }
 
-        /* Cropperのボックス色 */
         .cropper-view-box,
         .cropper-face {
-            border: 2px solid #16A085 !important;
+            border: 3px solid #16A085 !important;
         }
 
-        /* フッターのスタイルを非表示 */
         footer {
             visibility: hidden;
         }
 
-        /* レスポンシブデザインの調整 */
         @media only screen and (min-width: 768px) {
             .stApp {
                 padding: 50px 150px;
@@ -387,7 +366,7 @@ def run_application():
                 max-width: 100% !important;
                 height: auto !important;
             }
-            .css-1e5imcs { /* タブのスタイルクラス */
+            .css-1e5imcs {
                 font-size: 14px;
             }
             .stButton button {
@@ -396,14 +375,12 @@ def run_application():
             }
         }
 
-        /* 画像のフレームとシャドウ */
         img {
             border: 4px solid #1B4F72;
             border-radius: 15px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
         }
 
-        /* カードスタイルの追加 */
         .card {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 30px;
@@ -412,8 +389,7 @@ def run_application():
             margin-bottom: 30px;
         }
 
-        /* タブスタイルの改善 */
-        .css-1e5imcs { /* タブのスタイルクラス */
+        .css-1e5imcs { 
             font-size: 18px;
             background-color: #1B4F72;
             color: #FFFFFF;
