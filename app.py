@@ -230,6 +230,8 @@ def run_application():
             st.subheader("プレビュー")
             st.image(final_image, width=300)
             st.write(f"現在選択中のモデル: {selected_model}")
+            st.write(st.secrets["MODEL_CONF_CAP1"])
+            st.write(st.secrets["MODEL_CONF_CAP2"])
             if st.button("検出開始"):
                 with st.spinner("検出中..."):
                     results = model(
