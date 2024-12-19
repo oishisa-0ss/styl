@@ -6,6 +6,7 @@ from datetime import datetime
 from ultralytics import YOLO
 import os
 import sys
+import pytz
 
 def resize_and_limit(image, max_size=1200):
     if image.width > max_size or image.height > max_size:
@@ -20,7 +21,7 @@ def ensure_square(image):
         return image.crop((0, 0, min_side, min_side))
     return image
 
-def add_timestamp_and_detection_count(image, detection_count):
+def add_timestamp_and_detection_count(image, detection_count, model_name, input_size, conf_threshold, nms_threshold):
     draw = ImageDraw.Draw(image)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     font_path = os.path.join(script_dir, "fonts", "DejaVuSansMono.ttf") 
@@ -50,8 +51,16 @@ def add_timestamp_and_detection_count(image, detection_count):
         except Exception as e:
             st.warning(st.secrets["LOGO_WANING"])
     
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    text = f"{timestamp}\nCount: {detection_count}"
+    tokyo_tz = pytz.timezone('Asia/Tokyo')
+    timestamp = datetime.now(tokyo_tz).strftime('%Y-%m-%d %H:%M:%S')
+    text = (
+        f"{timestamp}\n"
+        f"Count: {detection_count}\n"
+        f"Model: {model_name}\n"
+        f"Input: ×{input_size}\n"
+        f"Conf : {conf_threshold:.2f}\n"
+        f"NMS  : {nms_threshold:.2f}"
+    )
     
     x, y = 10, y_offset  
     
@@ -120,6 +129,11 @@ def run_application():
         
     st.title(st.secrets["TITLE"])
 
+    ATTENTION = st.secrets["PG_ATTENTION"]
+    if ATTENTION:
+        st.write(f'<span style="color:red;background:pink">{ATTENTION}</span>',
+                 unsafe_allow_html=True)
+    
     if 'original_image' not in st.session_state:
         st.session_state.original_image = None
     if 'detection_result' not in st.session_state:
@@ -257,7 +271,9 @@ def run_application():
                     
                     annotated_pil = Image.fromarray(annotated_image)
                     
-                    annotated_pil = add_timestamp_and_detection_count(annotated_pil, num_detections)
+                    annotated_pil = add_timestamp_and_detection_count(
+                        annotated_pil, num_detections, selected_model, input_size, conf_threshold, nms_threshold
+                    )
                     
                     st.session_state.detection_result = annotated_pil
                     st.image(annotated_pil, caption="検出結果", width=500)
@@ -273,9 +289,6 @@ def run_application():
                     key="download-detection",
                     help=st.secrets["DOWNLOAD_HELP"],
                 )
-            
-    else:
-        st.info("上部のタブか画像をアップロードするか、カメラで撮影してください")
     
     st.markdown(
         """
@@ -379,11 +392,11 @@ def run_application():
             }
         }
 
-        img {
+        /* img {
             border: 4px solid #1B4F72;
             border-radius: 15px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
+        } */
 
         .card {
             background-color: rgba(255, 255, 255, 0.9);
