@@ -207,7 +207,7 @@ def run_application():
     
     col1, col2 = st.columns([1, 3])
 
-    tabs = st.tabs(["アップロード", "None"])
+    tabs = st.tabs(["画像をアップロード", "カメラを起動"])
     
     with tabs[0]:
         st.header("画像をアップロード")
