@@ -225,7 +225,10 @@ def run_application():
     with tabs[1]:
         st.header("カメラで撮影")
         st.caption(st.secrets["CMR_ATTENTION"])
-        camera_file = st.camera_input("接写してください。", help="この端末のカメラを利用して画像を撮影できます。")
+        camera_file = st.camera_input(
+            "接写してください。", 
+            help=st.secrets["CAMERA_HELP"]
+            )
 
         if camera_file:
             original = Image.open(camera_file)
