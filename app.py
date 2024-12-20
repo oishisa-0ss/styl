@@ -127,7 +127,7 @@ def run_application():
     else:
         st.warning(st.secrets["PIC_ERR"])
         
-    st.title(st.secrets["TITLE"])
+    #st.title(st.secrets["TITLE"])
 
     ATTENTION = st.secrets["PG_ATTENTION"]
     if ATTENTION:
@@ -160,14 +160,16 @@ def run_application():
         st.error(st.secrets["MODEL_ERR"])
         sys.exit()
 
-    st.sidebar.header("モデル選択")
+    st.sidebar.header("検出モデル選択")
 
-    selected_model = st.sidebar.selectbox(
+    model_labels = [os.path.splitext(f)[0] for f in model_files]
+    selected_label = st.sidebar.selectbox(
         "使用するモデルを選択",
-        options=model_files,
+        options=model_labels,
         index=0,
         help=st.secrets["MODEL_HELP"]
     )
+    selected_model = selected_label + ".pt"
     
     model_path = os.path.join(models_dir, selected_model)
     model = YOLO(model_path)
@@ -175,20 +177,20 @@ def run_application():
     st.sidebar.header("設定")
     
     input_size = st.sidebar.selectbox(
-        "入力サイズ",
-        options=[640, 1024, 1280],
+        "## 入力サイズ",
+        options=[640, 768, 1024, 1280],
         key='input_size',
         help=st.secrets["INPUT_HELP"]
     )
     
     show_labels = st.sidebar.checkbox(
-        "ラベル表示",
+        "## ラベル表示",
         key='show_labels',
         help=st.secrets["LABEL_HELP"]
     )
     
     conf_threshold = st.sidebar.slider(
-        "conf下限値",
+        "## conf下限値",
         min_value=0.05,
         max_value=0.70,
         key='conf_threshold',
@@ -197,7 +199,7 @@ def run_application():
     )
     
     nms_threshold = st.sidebar.slider(
-        "NMS",
+        "## NMS",
         min_value=0.05,
         max_value=0.70,
         key='nms_threshold',
@@ -255,10 +257,15 @@ def run_application():
             
             st.subheader("プレビュー")
             st.image(final_image, width=300)
-            st.write(f"現在選択中のモデル: {selected_model}")
+            st.write(f"##### 検出モデル: {selected_label}")
+            st.write(f"##### 入力サイズ: ×{input_size}")
+            st.write(f"##### conf下限値: {conf_threshold:.2f}")
+            st.write(f"##### NMS: {nms_threshold:.2f}")
+
             st.write(st.secrets["MODEL_CONF_CAP1"])
             st.write(st.secrets["MODEL_CONF_CAP2"])
-            if st.button("検出開始"):
+
+            if st.button("### 検出開始"):
                 with st.spinner("検出中..."):
                     results = model(
                         source=final_image,
@@ -282,7 +289,7 @@ def run_application():
                     annotated_pil = Image.fromarray(annotated_image)
                     
                     annotated_pil = add_timestamp_and_detection_count(
-                        annotated_pil, num_detections, selected_model, input_size, conf_threshold, nms_threshold
+                        annotated_pil, num_detections, selected_label, input_size, conf_threshold, nms_threshold
                     )
                     
                     st.session_state.detection_result = annotated_pil
