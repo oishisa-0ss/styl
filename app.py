@@ -223,7 +223,13 @@ def run_application():
     
 
     with tabs[1]:
-        st.header("None")
+        st.header("カメラで撮影")
+        camera_file = st.camera_input("カメラを起動して写真を撮影", help="この端末のカメラを利用して画像を撮影できます。")
+
+        if camera_file:
+            original = Image.open(camera_file)
+            st.session_state.original_image = resize_and_limit(original)
+            st.session_state.full_resolution_image = original
     
     if st.session_state.full_resolution_image:
         st.subheader("切り抜き範囲を選択")
