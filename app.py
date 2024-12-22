@@ -247,8 +247,9 @@ def run_application():
         cropped_image = st_cropper(
             image,
             realtime_update=True,
-            box_color="#FF0000",
-            aspect_ratio=(1, 1)
+            box_color="#1B4F72",
+            aspect_ratio=(1, 1),
+            stroke_width=6
         )
         
         if cropped_image:
