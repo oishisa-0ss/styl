@@ -24,7 +24,7 @@ def ensure_square(image):
 def add_timestamp_and_detection_count(image, detection_count, model_name, input_size, conf_threshold, nms_threshold):
     draw = ImageDraw.Draw(image)
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    font_path = os.path.join(script_dir, "fonts", "DejaVuSansMono.ttf") 
+    font_path = os.path.join(script_dir, "fonts", "Mono.ttf") 
     
     try:
         font_size = 60  
