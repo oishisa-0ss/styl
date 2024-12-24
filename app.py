@@ -29,12 +29,12 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     try:
         font_size = 60  
         font = ImageFont.truetype(font_path, size=font_size)
+
     except IOError:
         st.warning(st.secrets["FONT_WARNING"])
         font = ImageFont.load_default()
     
     logo_path = os.path.join(script_dir, "img", "logo.png")
-    
     y_offset = 10  
     
     if os.path.exists(logo_path):
@@ -42,17 +42,16 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
             logo = Image.open(logo_path).convert("RGBA")
             logo_size = (800, 800)
             logo.thumbnail(logo_size, Image.Resampling.LANCZOS)
-            
             position = (10, y_offset)
-            
             image.paste(logo, position, logo)
-            
             y_offset += logo.size[1] + 10
+
         except Exception as e:
             st.warning(st.secrets["LOGO_WANING"])
     
     tokyo_tz = pytz.timezone('Asia/Tokyo')
     timestamp = datetime.now(tokyo_tz).strftime('%Y-%m-%d %H:%M:%S')
+
     text = (
         f"{timestamp}\n"
         f"Count: {detection_count}\n"
@@ -63,7 +62,6 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     )
     
     x, y = 10, y_offset  
-    
     text_color = (0, 0, 0)  
     stroke_color = (255, 255, 255)  
     stroke_width = 2  
@@ -112,6 +110,7 @@ def show_home_page():
         st.warning(st.secrets["PIC_ERR"])
     
     st.markdown("<br><br>", unsafe_allow_html=True)
+
     if st.button(st.secrets["USE_BUTTON"]):
         st.session_state.page = 'app'
         st.rerun()
@@ -125,6 +124,7 @@ def run_application():
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
     logo_image_path = os.path.join(script_dir, "img/logo.png")
+
     if os.path.exists(logo_image_path):
         logo_image = Image.open(logo_image_path)
         st.image(logo_image, use_container_width=True)
@@ -155,11 +155,13 @@ def run_application():
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     models_dir = os.path.join(script_dir, "models") 
+
     if not os.path.exists(models_dir):
         st.error(st.secrets["MODEL_DIRERR"])
         sys.exit()
     
     model_files = [f for f in os.listdir(models_dir) if f.endswith('.pt')]
+
     if not model_files:
         st.error(st.secrets["MODEL_ERR"])
         sys.exit()
@@ -167,6 +169,7 @@ def run_application():
     st.sidebar.header("検出モデル選択")
 
     model_labels = [os.path.splitext(f)[0] for f in model_files]
+
     selected_label = st.sidebar.selectbox(
         "使用するモデルを選択",
         options=model_labels,
@@ -266,12 +269,12 @@ def run_application():
             st.write(f"##### 入力サイズ: ×{input_size}")
             st.write(f"##### conf下限値: {conf_threshold:.2f}")
             st.write(f"##### NMS: {nms_threshold:.2f}")
-
             st.write(st.secrets["MODEL_CONF_CAP1"])
             st.write(st.secrets["MODEL_CONF_CAP2"])
 
             if st.button("### 検出開始"):
                 with st.spinner("検出中..."):
+
                     results = model(
                         source=final_image,
                         imgsz=input_size,
@@ -290,11 +293,15 @@ def run_application():
                         annotated_image = results[0].plot(labels=False)  
                     
                     annotated_image = annotated_image[:, :, ::-1]
-                    
                     annotated_pil = Image.fromarray(annotated_image)
-                    
+
                     annotated_pil = add_timestamp_and_detection_count(
-                        annotated_pil, num_detections, selected_label, input_size, conf_threshold, nms_threshold
+                        annotated_pil, 
+                        num_detections, 
+                        selected_label, 
+                        input_size, 
+                        conf_threshold, 
+                        nms_threshold
                     )
                     
                     st.session_state.detection_result = annotated_pil
@@ -303,6 +310,7 @@ def run_application():
             if st.session_state.detection_result:
                 buf = io.BytesIO()
                 st.session_state.detection_result.save(buf, format="JPEG", quality=95)
+                
                 st.download_button(
                     label="結果をダウンロード",
                     data=buf.getvalue(),
