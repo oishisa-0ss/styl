@@ -107,7 +107,7 @@ def show_home_page():
 
         st.image(logo_image, use_container_width=True)
         st.image(main_image, use_container_width=True)
-        st.image(sub_image, use_column_width=True)
+        st.image(sub_image, use_container_width=True)
     else:
         st.warning(st.secrets["PIC_ERR"])
     
