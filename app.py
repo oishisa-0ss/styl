@@ -37,6 +37,10 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     logo_path = os.path.join(script_dir, "img", "logo.png")
     y_offset = 10  
     
+    tokyo_tz = pytz.timezone('Asia/Tokyo')
+    timestamp = datetime.now(tokyo_tz).strftime('%Y-%m-%d %H:%M:%S')
+    st.session_state.timestamp = timestamp
+
     if os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path).convert("RGBA")
@@ -48,9 +52,6 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
 
         except Exception as e:
             st.warning(st.secrets["LOGO_WANING"])
-    
-    tokyo_tz = pytz.timezone('Asia/Tokyo')
-    timestamp = datetime.now(tokyo_tz).strftime('%Y-%m-%d %H:%M:%S')
 
     text = (
         f"{timestamp}\n"
@@ -274,7 +275,6 @@ def run_application():
 
             if st.button("### 検出開始"):
                 with st.spinner("検出中..."):
-
                     results = model(
                         source=final_image,
                         imgsz=input_size,
@@ -303,7 +303,10 @@ def run_application():
                         conf_threshold, 
                         nms_threshold
                     )
-                    
+
+                    if st.session_state.timestamp:
+                        print(f"\n{st.session_state.timestamp}")
+                        
                     st.session_state.detection_result = annotated_pil
                     st.image(annotated_pil, caption="検出結果", width=500)
             
@@ -314,7 +317,7 @@ def run_application():
                 st.download_button(
                     label="結果をダウンロード",
                     data=buf.getvalue(),
-                    file_name=f"detected_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
+                    file_name=f"rksi_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
                     mime="image/jpeg",
                     key="download-detection",
                     help=st.secrets["DOWNLOAD_HELP"],
