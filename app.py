@@ -98,12 +98,16 @@ def show_home_page():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     logo_image_path = os.path.join(script_dir, "img/logo.png")
     main_image_path = os.path.join(script_dir, "img/main.jpg")
-    
+    sub_image_path = os.path.join(script_dir, "img/sub.jpg")
+
     if os.path.exists(main_image_path):
         logo_image = Image.open(logo_image_path)
         main_image = Image.open(main_image_path)
+        sub_image = Image.open(sub_image_path)
+
         st.image(logo_image, use_container_width=True)
         st.image(main_image, use_container_width=True)
+        st.image(sub_image, use_column_width=True)
     else:
         st.warning(st.secrets["PIC_ERR"])
     
