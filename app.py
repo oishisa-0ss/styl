@@ -39,7 +39,7 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     
     tokyo_tz = pytz.timezone('Asia/Tokyo')
     timestamp = datetime.now(tokyo_tz).strftime('%Y-%m-%d %H:%M:%S')
-    st.session_state.timestamp = timestamp
+    print(f"\n{timestamp}")
 
     if os.path.exists(logo_path):
         try:
@@ -75,7 +75,6 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
         stroke_width=stroke_width,
         stroke_fill=stroke_color
     )
-    
     return image
 
 def main():
@@ -303,10 +302,7 @@ def run_application():
                         conf_threshold, 
                         nms_threshold
                     )
-
-                    if st.session_state.timestamp:
-                        print(f"\n{st.session_state.timestamp}")
-                        
+                       
                     st.session_state.detection_result = annotated_pil
                     st.image(annotated_pil, caption="検出結果", width=500)
             
