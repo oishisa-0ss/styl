@@ -177,6 +177,13 @@ def run_application():
         help=st.secrets["MODEL_HELP"]
     )
     selected_model = selected_label + ".pt"
+    selected_index = model_labels.index(selected_label)
+    if 'previous_selected_label' not in st.session_state or st.session_state.previous_selected_label != selected_label:
+        st.session_state.previous_selected_label = selected_label
+        if selected_index == 0:
+            st.session_state.conf_threshold = 0.20
+        elif selected_index == 1:
+            st.session_state.conf_threshold = 0.35
     
     model_path = os.path.join(models_dir, selected_model)
     model = YOLO(model_path)
