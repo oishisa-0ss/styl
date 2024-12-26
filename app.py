@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 import io
 from streamlit_cropper import st_cropper
 from datetime import datetime
@@ -9,10 +9,13 @@ import sys
 import pytz
 
 def resize_and_limit(image, max_size=1200):
+    image = ImageOps.exif_transpose(image)
+    
     if image.width > max_size or image.height > max_size:
         ratio = min(max_size / image.width, max_size / image.height)
         new_size = (int(image.width * ratio), int(image.height * ratio))
-        return image.resize(new_size, Image.Resampling.LANCZOS)
+        resized_image = image.resize(new_size, Image.Resampling.LANCZOS)
+        return resized_image
     return image
 
 def ensure_square(image):
@@ -234,6 +237,7 @@ def run_application():
         )
         if uploaded_file:
             original = Image.open(uploaded_file)
+            original = ImageOps.exif_transpose(original)
             st.session_state.original_image = resize_and_limit(original)
             st.session_state.full_resolution_image = original
     
@@ -257,7 +261,7 @@ def run_application():
         st.caption(st.secrets["CLOP_CAP2"])
         
         image = st.session_state.full_resolution_image
-        
+
         cropped_image = st_cropper(
             image,
             realtime_update=True,
@@ -453,6 +457,13 @@ def run_application():
         .css-1e5imcs:hover {
             background-color: #2471A3;
             color: #D6EAF8;
+        }
+
+        .stCropper {
+            max-width: 100%;
+            height: auto;
+            display: flex;
+            justify-content: center;
         }
         </style>
         """,
