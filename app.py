@@ -185,9 +185,11 @@ def run_application():
         st.session_state.previous_selected_label = selected_label
         if selected_index == 0:
             st.session_state.conf_threshold = 0.20
+            st.session_state.input_size = 768
         elif selected_index == 1:
             st.session_state.conf_threshold = 0.35
-    
+            st.session_state.input_size = 1024
+
     model_path = os.path.join(models_dir, selected_model)
     model = YOLO(model_path)
 
