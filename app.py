@@ -138,7 +138,7 @@ def run_application():
 
     ATTENTION = st.secrets["PG_ATTENTION"]
     if ATTENTION:
-        st.write(f'<span style="color:red;background:pink">{ATTENTION}</span>',
+        st.write(f'{ATTENTION}',
                  unsafe_allow_html=True)
     
     if 'original_image' not in st.session_state:
