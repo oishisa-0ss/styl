@@ -47,7 +47,7 @@ rich==14.0.0
 rpds-py==0.24.0
 scipy==1.15.2
 seaborn==0.13.2
-six==1.17.0
+six
 smmap==1.13.3
 streamlit==1.44.0
 streamlit-cropper==0.2.2
