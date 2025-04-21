@@ -27,7 +27,7 @@ mpmath
 narwhals
 networkx
 numpy
-opencv-python==4.5.1
+opencv-python==4.1.3
 opencv-python-headless
 packaging
 pandas
