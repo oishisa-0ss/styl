@@ -50,7 +50,7 @@ scipy
 seaborn
 six
 smmap
-streamlit<0.89
+streamlit
 streamlit-cropper
 sympy
 tenacity
