@@ -105,14 +105,11 @@ def show_home_page():
         logo_image = Image.open(logo_image_path)
         main_image = Image.open(main_image_path)
         sub_image = Image.open(sub_image_path)
-        st.image(logo_image, use_column_width=True)
-        st.image(main_image, use_column_width=True)
-        st.image(sub_image, use_column_width=True)
-        '''
+
         st.image(logo_image, use_container_width=True)
         st.image(main_image, use_container_width=True)
         st.image(sub_image, use_container_width=True)
-        '''
+
     else:
         st.warning(st.secrets["PIC_ERR"])
     
@@ -120,8 +117,8 @@ def show_home_page():
 
     if st.button(st.secrets["USE_BUTTON"]):
         st.session_state.page = 'app'
-        #st.rerun()
-        st.experimental_rerun()
+        st.rerun()
+        # st.experimental_rerun()
 
 def run_application():
     st.set_page_config(
