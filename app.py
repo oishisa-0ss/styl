@@ -121,7 +121,7 @@ def show_home_page():
     if st.button(st.secrets["USE_BUTTON"]):
         st.session_state.page = 'app'
         #st.rerun()
-        RerunException
+        st.experimental_rerun()
 
 def run_application():
     st.set_page_config(
