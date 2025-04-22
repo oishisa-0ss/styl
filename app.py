@@ -274,8 +274,8 @@ def run_application():
             image,
             realtime_update=True,
             box_color="#1B4F72",
-            aspect_ratio=(1, 1),
-            stroke_width=6
+            aspect_ratio=(1, 1)
+            #stroke_width=6
         )
         
         if cropped_image:
