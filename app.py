@@ -194,7 +194,7 @@ def run_application():
             st.session_state.input_size = 768
         elif selected_index == 1:
             st.session_state.conf_threshold = 0.35
-            st.session_state.input_size = 1024
+            st.session_state.input_size = 1280
 
     model_path = os.path.join(models_dir, selected_model)
     model = YOLO(model_path)
