@@ -205,6 +205,8 @@ def run_application():
         st.session_state.conf_threshold = 0.20
     if 'nms_threshold' not in st.session_state:
         st.session_state.nms_threshold = 0.45
+    if 'download_size' not in st.session_state:
+        st.session_state.download_size = 1400
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     models_dir = os.path.join(script_dir, "models") 
@@ -274,6 +276,16 @@ def run_application():
         key='nms_threshold',
         step=0.05,
         help=st.secrets["NMS_HELP"]
+    )
+
+    st.sidebar.header("出力")
+    download_size = st.sidebar.slider(
+        "保存サイズ (px)",
+        min_value=800,
+        max_value=2048,
+        step=128,
+        key='download_size',
+        help="ダウンロード画像の一辺のピクセル数。元画像より大きい場合は高品質で拡大します。"
     )
     
     col1, col2 = st.columns([1, 3])
@@ -363,6 +375,10 @@ def run_application():
                         conf_threshold, 
                         nms_threshold
                     )
+                    
+                    target = st.session_state.download_size
+                    if annotated_pil.width != target:
+                        annotated_pil = annotated_pil.resize((target, target), Image.Resampling.LANCZOS)
                     
                     result_buf = io.BytesIO()
                     annotated_pil.save(result_buf, format="JPEG", quality=95)
