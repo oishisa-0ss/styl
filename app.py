@@ -233,7 +233,7 @@ def run_application():
     
     input_size = st.sidebar.selectbox(
         "## 入力サイズ",
-        options=[640, 768, 1024, 1280],
+        options=[640, 768, 1024, 1280, 1536],
         key='input_size',
         help=st.secrets["INPUT_HELP"]
     )
@@ -307,7 +307,7 @@ def run_application():
         )
         
         if cropped_image:
-            max_side = min(input_size, 1280)
+            max_side = min(input_size, 1536)
             final_image = clamp_square(cropped_image, max_side)
             
             st.subheader("プレビュー")
