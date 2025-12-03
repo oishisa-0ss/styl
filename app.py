@@ -380,6 +380,8 @@ def run_application():
                     gc.collect()
             
             if st.session_state.detection_result_bytes:
+                # 再描画時も画像を登録し直してメディアID欠損を防ぐ
+                st.image(st.session_state.detection_result_bytes, caption="検出結果", width=500)
                 st.download_button(
                     label="結果をダウンロード",
                     data=st.session_state.detection_result_bytes,
