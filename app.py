@@ -140,13 +140,13 @@ def show_home_page():
         main_image = Image.open(main_image_path)
         sub_image = Image.open(sub_image_path)
         
-        # st.image(logo_image, use_container_width=True)
-        # st.image(main_image, use_container_width=True)
-        # st.image(sub_image, use_container_width=True)
+        # st.image(logo_image, width="stretch")
+        # st.image(main_image, width="stretch")
+        # st.image(sub_image, width="stretch")
         
-        st.image(logo_image, use_container_width=True)
-        st.image(main_image, use_container_width=True)
-        st.image(sub_image, use_container_width=True)
+        st.image(logo_image, width="stretch")
+        st.image(main_image, width="stretch")
+        st.image(sub_image, width="stretch")
     else:
         st.warning(st.secrets["PIC_ERR"])
     
@@ -168,8 +168,8 @@ def run_application():
 
     if os.path.exists(logo_image_path):
         logo_image = Image.open(logo_image_path)
-        st.image(logo_image, use_container_width=True)
-        # st.image(logo_image, use_container_width=True)
+        st.image(logo_image, width="stretch")
+        # st.image(logo_image, width="stretch")
     else:
         st.warning(st.secrets["PIC_ERR"])
         
@@ -359,7 +359,7 @@ def run_application():
             
             if st.session_state.detection_result_bytes:
                 # 再描画時も画像を登録し直してメディアID欠損を防ぐ
-                st.image(st.session_state.detection_result_bytes, caption="検出結果", use_container_width=True)
+                st.image(st.session_state.detection_result_bytes, caption="検出結果", width="stretch")
                 st.download_button(
                     label="結果をダウンロード",
                     data=st.session_state.detection_result_bytes,
