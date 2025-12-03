@@ -375,13 +375,13 @@ def run_application():
                     result_buf = io.BytesIO()
                     export_image.save(result_buf, format="JPEG", quality=95)
                     st.session_state.detection_result_bytes = result_buf.getvalue()
-                    st.image(annotated_pil, caption="検出結果", width=500)
+                    st.image(export_image, caption="検出結果", use_column_width=True)
                     del results
                     gc.collect()
             
             if st.session_state.detection_result_bytes:
                 # 再描画時も画像を登録し直してメディアID欠損を防ぐ
-                st.image(st.session_state.detection_result_bytes, caption="検出結果", width=500)
+                st.image(st.session_state.detection_result_bytes, caption="検出結果", use_column_width=True)
                 st.download_button(
                     label="結果をダウンロード",
                     data=st.session_state.detection_result_bytes,
