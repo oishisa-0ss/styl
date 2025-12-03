@@ -341,6 +341,14 @@ def run_application():
                     annotated_image = annotated_image[:, :, ::-1]
                     annotated_pil = Image.fromarray(annotated_image)
 
+                    # Make box strokes look thinner by shrinking and scaling back
+                    scale = 0.5  # 50% then back to original
+                    w, h = annotated_pil.size
+                    annotated_pil = annotated_pil.resize(
+                        (max(1, int(w * scale)), max(1, int(h * scale))),
+                        Image.Resampling.BILINEAR,
+                    ).resize((w, h), Image.Resampling.BICUBIC)
+
                     annotated_pil = add_timestamp_and_detection_count(
                         annotated_pil, 
                         num_detections, 
