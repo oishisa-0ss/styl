@@ -62,8 +62,8 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     font_path = os.path.join(script_dir, "fonts", "Mono.ttf") 
     
     try:
-        # Legacy: fixed-ish size scaled to image, smaller than panel version
-        font_size = max(28, int(min(image.size) * 0.03))
+        # Smaller text: ~2.2% of short edge, min 18px
+        font_size = max(18, int(min(image.size) * 0.022))
         font = ImageFont.truetype(font_path, size=font_size)
 
     except IOError:
@@ -80,7 +80,7 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     if os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path).convert("RGBA")
-            logo_size = (200, 200)
+            logo_size = (160, 160)
             logo.thumbnail(logo_size, Image.Resampling.LANCZOS)
             position = (10, y_offset)
             image.paste(logo, position, logo)
@@ -324,7 +324,7 @@ def run_application():
                     results = model(
                         source=final_image,
                         imgsz=input_size,
-                        line_width=1,
+                        line_width=0.5,
                         conf=conf_threshold,
                         iou=nms_threshold,
                         max_det=1000
@@ -350,16 +350,8 @@ def run_application():
                         nms_threshold
                     )
                     
-                    DOWNLOAD_EXPORT_SIZE = 1800  # legacy download resolution
-                    export_image = annotated_pil
-                    if annotated_pil.width < DOWNLOAD_EXPORT_SIZE:
-                        export_image = annotated_pil.resize(
-                            (DOWNLOAD_EXPORT_SIZE, DOWNLOAD_EXPORT_SIZE),
-                            Image.Resampling.LANCZOS,
-                        )
-                    
                     result_buf = io.BytesIO()
-                    export_image.save(result_buf, format="JPEG", quality=95)
+                    annotated_pil.save(result_buf, format="JPEG", quality=95)
                     st.session_state.detection_result_bytes = result_buf.getvalue()
                     del results
                     gc.collect()
