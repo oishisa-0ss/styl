@@ -307,8 +307,8 @@ def run_application():
         )
         
         if cropped_image:
-            max_side = min(input_size, 1536)
-            final_image = clamp_square(cropped_image, max_side)
+            # Always prepare a square 1800x1800 image (legacy behavior)
+            final_image = ensure_square(cropped_image).resize((1800, 1800), Image.Resampling.LANCZOS)
             
             st.subheader("プレビュー")
             st.image(final_image, width=300)
