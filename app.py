@@ -334,9 +334,9 @@ def run_application():
                     st.success(f"検出数: {num_detections}")
                     
                     if show_labels:
-                        annotated_image = results[0].plot()
+                        annotated_image = results[0].plot(line_width=2)
                     else:
-                        annotated_image = results[0].plot(labels=False)  
+                        annotated_image = results[0].plot(labels=False, line_width=2)  
                     
                     annotated_image = annotated_image[:, :, ::-1]
                     annotated_pil = Image.fromarray(annotated_image)
