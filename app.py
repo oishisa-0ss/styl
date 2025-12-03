@@ -54,12 +54,16 @@ def clamp_square(image, max_side: int):
     return image
 
 def add_timestamp_and_detection_count(image, detection_count, model_name, input_size, conf_threshold, nms_threshold):
+    # Work on RGBA to allow a translucent info panel
+    if image.mode != "RGBA":
+        image = image.convert("RGBA")
     draw = ImageDraw.Draw(image)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     font_path = os.path.join(script_dir, "fonts", "Mono.ttf") 
     
     try:
-        font_size = 60  
+        # scale font to image size (about 4% of the shorter edge)
+        font_size = max(24, int(min(image.size) * 0.04))
         font = ImageFont.truetype(font_path, size=font_size)
 
     except IOError:
@@ -94,20 +98,34 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
         f"NMS  : {nms_threshold:.2f}"
     )
     
-    x, y = 10, y_offset  
-    text_color = (0, 0, 0)  
-    stroke_color = (255, 255, 255)  
-    stroke_width = 2  
+    padding = int(font_size * 0.6)
+    x, y = 10, y_offset
+    text_color = (0, 0, 0, 255)
+    panel_fill = (255, 255, 255, 180)  # translucent white
+    panel_border = (0, 120, 80, 220)
 
-    draw.text(
-        (x, y),
+    text_bbox = font.getbbox(text)
+    text_w = text_bbox[2] - text_bbox[0]
+    text_h = text_bbox[3] - text_bbox[1]
+    panel = Image.new("RGBA", (text_w + padding * 2, text_h + padding * 2), (0, 0, 0, 0))
+    panel_draw = ImageDraw.Draw(panel)
+    panel_draw.rounded_rectangle(
+        [(0, 0), (panel.size[0], panel.size[1])],
+        radius=int(padding * 0.5),
+        fill=panel_fill,
+        outline=panel_border,
+        width=2,
+    )
+    panel_draw.multiline_text(
+        (padding, padding),
         text,
         font=font,
         fill=text_color,
-        stroke_width=stroke_width,
-        stroke_fill=stroke_color
+        spacing=int(font_size * 0.25),
+        align="left",
     )
-    return image
+    image.alpha_composite(panel, dest=(x, y))
+    return image.convert("RGB")
 
 def main():
 
