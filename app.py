@@ -54,7 +54,7 @@ def clamp_square(image, max_side: int):
     return image
 
 def add_timestamp_and_detection_count(image, detection_count, model_name, input_size, conf_threshold, nms_threshold):
-    # Work on RGBA to allow a translucent info panel
+    # Draw simple text overlay in the top-left (legacy style)
     if image.mode != "RGBA":
         image = image.convert("RGBA")
     draw = ImageDraw.Draw(image)
@@ -62,8 +62,8 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     font_path = os.path.join(script_dir, "fonts", "Mono.ttf") 
     
     try:
-        # scale font to image size (about 4% of the shorter edge)
-        font_size = max(24, int(min(image.size) * 0.04))
+        # Legacy: fixed-ish size scaled to image, smaller than panel version
+        font_size = max(28, int(min(image.size) * 0.03))
         font = ImageFont.truetype(font_path, size=font_size)
 
     except IOError:
@@ -80,7 +80,7 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     if os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path).convert("RGBA")
-            logo_size = (800, 800)
+            logo_size = (200, 200)
             logo.thumbnail(logo_size, Image.Resampling.LANCZOS)
             position = (10, y_offset)
             image.paste(logo, position, logo)
@@ -98,33 +98,19 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
         f"NMS  : {nms_threshold:.2f}"
     )
     
-    padding = int(font_size * 0.6)
     x, y = 10, y_offset
     text_color = (0, 0, 0, 255)
-    panel_fill = (255, 255, 255, 180)  # translucent white
-    panel_border = (0, 120, 80, 220)
-
-    text_bbox = font.getbbox(text)
-    text_w = text_bbox[2] - text_bbox[0]
-    text_h = text_bbox[3] - text_bbox[1]
-    panel = Image.new("RGBA", (text_w + padding * 2, text_h + padding * 2), (0, 0, 0, 0))
-    panel_draw = ImageDraw.Draw(panel)
-    panel_draw.rounded_rectangle(
-        [(0, 0), (panel.size[0], panel.size[1])],
-        radius=int(padding * 0.5),
-        fill=panel_fill,
-        outline=panel_border,
-        width=2,
-    )
-    panel_draw.multiline_text(
-        (padding, padding),
+    stroke_color = (255, 255, 255, 255)
+    draw.multiline_text(
+        (x, y),
         text,
         font=font,
         fill=text_color,
         spacing=int(font_size * 0.25),
+        stroke_width=1,
+        stroke_fill=stroke_color,
         align="left",
     )
-    image.alpha_composite(panel, dest=(x, y))
     return image.convert("RGB")
 
 def main():
