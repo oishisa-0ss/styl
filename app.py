@@ -364,10 +364,18 @@ def run_application():
                         nms_threshold
                     )
                     
+                    DOWNLOAD_EXPORT_SIZE = 1800  # legacy download resolution
+                    export_image = annotated_pil
+                    if annotated_pil.width < DOWNLOAD_EXPORT_SIZE:
+                        export_image = annotated_pil.resize(
+                            (DOWNLOAD_EXPORT_SIZE, DOWNLOAD_EXPORT_SIZE),
+                            Image.Resampling.LANCZOS,
+                        )
+                    
                     result_buf = io.BytesIO()
-                    annotated_pil.save(result_buf, format="JPEG", quality=95)
+                    export_image.save(result_buf, format="JPEG", quality=95)
                     st.session_state.detection_result_bytes = result_buf.getvalue()
-                    st.image(st.session_state.detection_result_bytes, caption="検出結果", width=500)
+                    st.image(annotated_pil, caption="検出結果", width=500)
                     del results
                     gc.collect()
             
