@@ -375,7 +375,6 @@ def run_application():
                     result_buf = io.BytesIO()
                     export_image.save(result_buf, format="JPEG", quality=95)
                     st.session_state.detection_result_bytes = result_buf.getvalue()
-                    st.image(export_image, caption="検出結果", use_column_width=True)
                     del results
                     gc.collect()
             
