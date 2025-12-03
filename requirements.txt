@@ -27,7 +27,6 @@ mpmath
 narwhals
 networkx
 numpy
-opencv-python
 opencv-python-headless
 packaging
 pandas
@@ -50,8 +49,8 @@ scipy
 seaborn
 six
 smmap
-streamlit==1.22.0
-streamlit-cropper==0.2.1
+streamlit==1.51.0
+streamlit-cropper==0.2.2
 sympy
 tenacity
 toml
