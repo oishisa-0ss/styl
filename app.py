@@ -1,12 +1,30 @@
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import io
+import gc
 from streamlit_cropper import st_cropper
 from datetime import datetime
 from ultralytics import YOLO
 import os
 import sys
 import pytz
+
+
+@st.cache_resource(show_spinner=False)
+def load_model(model_path: str):
+    """Load YOLO weights once and reuse across reruns to keep memory flat."""
+    return YOLO(model_path)
+
+
+def load_image_bytes(uploaded_file):
+    """Read an UploadedFile into raw bytes (smaller than keeping a PIL object in session)."""
+    return uploaded_file.getvalue()
+
+
+def bytes_to_pil(image_bytes: bytes):
+    """Create a PIL image from raw bytes with EXIF orientation fixed."""
+    image = Image.open(io.BytesIO(image_bytes))
+    return ImageOps.exif_transpose(image)
 
 def resize_and_limit(image, max_size=1200):
     image = ImageOps.exif_transpose(image)
@@ -22,6 +40,17 @@ def ensure_square(image):
     if image.width != image.height:
         min_side = min(image.width, image.height)
         return image.crop((0, 0, min_side, min_side))
+    return image
+
+
+def clamp_square(image, max_side: int):
+    """
+    Keep image square and make sure the side length does not exceed max_side.
+    Avoids upscaling to reduce memory footprint during inference.
+    """
+    image = ensure_square(image)
+    if image.width > max_side:
+        image = image.resize((max_side, max_side), Image.Resampling.LANCZOS)
     return image
 
 def add_timestamp_and_detection_count(image, detection_count, model_name, input_size, conf_threshold, nms_threshold):
@@ -147,10 +176,10 @@ def run_application():
         st.write(f'{ATTENTION}',
                  unsafe_allow_html=True)
     
-    if 'original_image' not in st.session_state:
-        st.session_state.original_image = None
-    if 'detection_result' not in st.session_state:
-        st.session_state.detection_result = None
+    if 'full_image_bytes' not in st.session_state:
+        st.session_state.full_image_bytes = None
+    if 'detection_result_bytes' not in st.session_state:
+        st.session_state.detection_result_bytes = None
     if 'input_size' not in st.session_state:
         st.session_state.input_size = 1024
     if 'show_labels' not in st.session_state:
@@ -159,8 +188,6 @@ def run_application():
         st.session_state.conf_threshold = 0.20
     if 'nms_threshold' not in st.session_state:
         st.session_state.nms_threshold = 0.45
-    if 'full_resolution_image' not in st.session_state:
-        st.session_state.full_resolution_image = None
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
     models_dir = os.path.join(script_dir, "models") 
@@ -197,7 +224,7 @@ def run_application():
             st.session_state.input_size = 1024
 
     model_path = os.path.join(models_dir, selected_model)
-    model = YOLO(model_path)
+    model = load_model(model_path)
 
     st.sidebar.header("設定")
     
@@ -244,10 +271,8 @@ def run_application():
             help=st.secrets["UPLOAD_HELP"]
         )
         if uploaded_file:
-            original = Image.open(uploaded_file)
-            original = ImageOps.exif_transpose(original)
-            st.session_state.original_image = resize_and_limit(original)
-            st.session_state.full_resolution_image = original
+            st.session_state.detection_result_bytes = None
+            st.session_state.full_image_bytes = load_image_bytes(uploaded_file)
     
 
     with tabs[1]:
@@ -259,16 +284,16 @@ def run_application():
             )
 
         if camera_file:
-            original = Image.open(camera_file)
-            st.session_state.original_image = resize_and_limit(original)
-            st.session_state.full_resolution_image = original
+            st.session_state.detection_result_bytes = None
+            st.session_state.full_image_bytes = load_image_bytes(camera_file)
     
-    if st.session_state.full_resolution_image:
+    if st.session_state.full_image_bytes:
         st.subheader("切り抜き範囲を選択")
         st.caption(st.secrets["CLOP_CAP1"])
         st.caption(st.secrets["CLOP_CAP2"])
         
-        image = st.session_state.full_resolution_image
+        image = bytes_to_pil(st.session_state.full_image_bytes)
+        image = resize_and_limit(image)
 
         cropped_image = st_cropper(
             image,
@@ -279,8 +304,8 @@ def run_application():
         )
         
         if cropped_image:
-            cropped_image = ensure_square(cropped_image)
-            final_image = cropped_image.resize((1800, 1800), Image.Resampling.LANCZOS)
+            max_side = min(input_size, 1280)
+            final_image = clamp_square(cropped_image, max_side)
             
             st.subheader("プレビュー")
             st.image(final_image, width=300)
@@ -321,17 +346,18 @@ def run_application():
                         conf_threshold, 
                         nms_threshold
                     )
-                       
-                    st.session_state.detection_result = annotated_pil
-                    st.image(annotated_pil, caption="検出結果", width=500)
+                    
+                    result_buf = io.BytesIO()
+                    annotated_pil.save(result_buf, format="JPEG", quality=95)
+                    st.session_state.detection_result_bytes = result_buf.getvalue()
+                    st.image(st.session_state.detection_result_bytes, caption="検出結果", width=500)
+                    del results
+                    gc.collect()
             
-            if st.session_state.detection_result:
-                buf = io.BytesIO()
-                st.session_state.detection_result.save(buf, format="JPEG", quality=95)
-                
+            if st.session_state.detection_result_bytes:
                 st.download_button(
                     label="結果をダウンロード",
-                    data=buf.getvalue(),
+                    data=st.session_state.detection_result_bytes,
                     file_name=f"rksi_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
                     mime="image/jpeg",
                     key="download-detection",
