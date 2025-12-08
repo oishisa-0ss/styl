@@ -112,6 +112,39 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
         stroke_fill=stroke_color,
         align="left",
     )
+
+    # Add Disclaimer Footer
+    footer_text = (
+        "※本報告書に記載の検出結果は、本システムによる自動処理に基づくものであり、その正確性・完全性を保証するものではありません。\n"
+        "記載内容を利用した判断・行為により生じた一切の結果について、当社は責任を負いかねます。"
+    )
+    
+    try:
+        # Smaller font for footer
+        footer_font_size = max(12, int(min(image.size) * 0.012))
+        footer_font = ImageFont.truetype(font_path, size=footer_font_size)
+    except IOError:
+        footer_font = ImageFont.load_default()
+
+    footer_color = (128, 128, 128, 255)
+    
+    # Calculate footer position (bottom-left)
+    # Use textbbox to get dimensions
+    left, top, right, bottom = draw.multiline_textbbox((0, 0), footer_text, font=footer_font, spacing=4)
+    text_height = bottom - top
+    
+    footer_x = 10
+    footer_y = image.height - text_height - 20 # 20px margin from bottom
+
+    draw.multiline_text(
+        (footer_x, footer_y),
+        footer_text,
+        font=footer_font,
+        fill=footer_color,
+        spacing=4,
+        align="left",
+    )
+
     return image.convert("RGB")
 
 def main():
