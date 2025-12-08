@@ -80,7 +80,7 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     if os.path.exists(logo_path):
         try:
             logo = Image.open(logo_path).convert("RGBA")
-            logo_width = int(min(image.size) * 0.15)
+            logo_width = int(min(image.size) * 0.25)
             logo_size = (logo_width, logo_width)
             logo.thumbnail(logo_size, Image.Resampling.LANCZOS)
             position = (10, y_offset)
