@@ -54,7 +54,6 @@ def clamp_square(image, max_side: int):
     return image
 
 def add_timestamp_and_detection_count(image, detection_count, model_name, input_size, conf_threshold, nms_threshold):
-    # Draw simple text overlay in the top-left (legacy style)
     if image.mode != "RGBA":
         image = image.convert("RGBA")
     draw = ImageDraw.Draw(image)
@@ -62,7 +61,6 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     font_path = os.path.join(script_dir, "fonts", "Mono.ttf") 
     
     try:
-        # Smaller text: ~2.2% of short edge, min 18px
         font_size = max(18, int(min(image.size) * 0.022))
         font = ImageFont.truetype(font_path, size=font_size)
 
@@ -113,14 +111,9 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
         align="left",
     )
 
-    # Add Disclaimer Footer
-    footer_text = (
-        "※本報告書に記載の検出結果は、本システムによる自動処理に基づくものであり、その正確性・完全性を保証するものではありません。\n"
-        "記載内容を利用した判断・行為により生じた一切の結果について、当社は責任を負いかねます。"
-    )
+    footer_text = "These detection results are for reference only."
     
     try:
-        # Smaller font for footer
         footer_font_size = max(12, int(min(image.size) * 0.012))
         footer_font = ImageFont.truetype(font_path, size=footer_font_size)
     except IOError:
@@ -128,13 +121,11 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
 
     footer_color = (128, 128, 128, 255)
     
-    # Calculate footer position (bottom-left)
-    # Use textbbox to get dimensions
     left, top, right, bottom = draw.multiline_textbbox((0, 0), footer_text, font=footer_font, spacing=4)
     text_height = bottom - top
     
     footer_x = 10
-    footer_y = image.height - text_height - 20 # 20px margin from bottom
+    footer_y = image.height - text_height - 20 
 
     draw.multiline_text(
         (footer_x, footer_y),
@@ -337,11 +328,9 @@ def run_application():
             realtime_update=True,
             box_color="#1B4F72",
             aspect_ratio=(1, 1)
-            #stroke_width=6
         )
         
         if cropped_image:
-            # Always prepare a square 1800x1800 image (legacy behavior)
             final_image = ensure_square(cropped_image).resize((1800, 1800), Image.Resampling.LANCZOS)
             
             st.subheader("プレビュー")
@@ -391,7 +380,6 @@ def run_application():
                     gc.collect()
             
             if st.session_state.detection_result_bytes:
-                # 再描画時も画像を登録し直してメディアID欠損を防ぐ
                 st.image(st.session_state.detection_result_bytes, caption="検出結果", width="stretch")
                 st.download_button(
                     label="結果をダウンロード",
@@ -401,6 +389,15 @@ def run_application():
                     key="download-detection",
                     help=st.secrets["DOWNLOAD_HELP"],
                 )
+    
+    
+    st.markdown("---")
+    st.caption(
+        """
+        ※本報告書に記載の検出結果は、本システムによる自動処理に基づくものであり、その正確性・完全性を保証するものではありません。  
+        　記載内容を利用した判断・行為により生じた一切の結果について、当社は責任を負いかねます。
+        """
+    )
     
     st.markdown(
         """
