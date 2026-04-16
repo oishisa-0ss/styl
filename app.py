@@ -237,7 +237,7 @@ def run_application():
     selected_label = st.sidebar.selectbox(
         "使用するモデルを選択",
         options=model_labels,
-        index=1,
+        index=0,
         help=st.secrets["MODEL_HELP"]
     )
     selected_model = selected_label + ".pt"
