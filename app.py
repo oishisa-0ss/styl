@@ -245,8 +245,8 @@ def run_application():
     if 'previous_selected_label' not in st.session_state or st.session_state.previous_selected_label != selected_label:
         st.session_state.previous_selected_label = selected_label
         if selected_index == 0:
-            st.session_state.conf_threshold = 0.20
-            st.session_state.input_size = 768
+            st.session_state.conf_threshold = 0.35
+            st.session_state.input_size = 1024
         elif selected_index == 1:
             st.session_state.conf_threshold = 0.35
             st.session_state.input_size = 1024
