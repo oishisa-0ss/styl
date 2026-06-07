@@ -34,11 +34,15 @@ def resize_and_limit(image, max_size=1200):
     return image
 
 
-def ensure_square(image):
-    if image.width != image.height:
-        min_side = min(image.width, image.height)
-        return image.crop((0, 0, min_side, min_side))
-    return image
+def ensure_square(image, background_color=(224, 247, 233)):
+    if image.width == image.height:
+        return image
+    max_side = max(image.width, image.height)
+    new_image = Image.new("RGB", (max_side, max_side), background_color)
+    offset_x = (max_side - image.width) // 2
+    offset_y = (max_side - image.height) // 2
+    new_image.paste(image, (offset_x, offset_y))
+    return new_image
 
 
 def clamp_square(image, max_side: int):
@@ -300,42 +304,32 @@ def run_application():
             st.session_state.full_image_bytes = load_image_bytes(camera_file)
     
     if st.session_state.full_image_bytes:
-        st.subheader("切り抜き範囲を選択")
-        st.caption(st.secrets["CLOP_CAP1"])
-        st.caption(st.secrets["CLOP_CAP2"])
-        
         image = bytes_to_pil(st.session_state.full_image_bytes)
+        image = ensure_square(image, background_color=(224, 247, 233))
         image = resize_and_limit(image)
 
-        cropper_display_size = 320
-        display_image = resize_and_limit(image, max_size=cropper_display_size)
-
-        box = st_cropper(
-            display_image,
-            realtime_update=True,
-            box_color="#1B4F72",
-            aspect_ratio=(1, 1),
-            return_type='box',
-            should_resize_image=False
-        )
+        st.subheader("切り抜き範囲・プレビュー")
+        enable_crop = st.checkbox("手動で切り抜き範囲を調整する（ズーム・拡大）", value=False)
         
-        if box:
-            scale_x = image.width / display_image.width
-            scale_y = image.height / display_image.height
+        final_image = None
+        
+        if enable_crop:
+            st.caption("青い枠線を動かして、検出したい範囲を指定してください。")
+            cropped_image = st_cropper(
+                image,
+                realtime_update=True,
+                box_color="#1B4F72",
+                aspect_ratio=(1, 1),
+                should_resize_image=True
+            )
+            if cropped_image:
+                final_image = cropped_image.resize((1800, 1800), Image.Resampling.LANCZOS)
+        else:
+            st.caption("現在、画像全体が選択されています。枠の修正は不要です。")
+            final_image = image.resize((1800, 1800), Image.Resampling.LANCZOS)
+            st.image(final_image, width=300, caption="全体プレビュー")
             
-            left = int(box['left'] * scale_x)
-            top = int(box['top'] * scale_y)
-            width = int(box['width'] * scale_x)
-            height = int(box['height'] * scale_y)
-            
-            right = min(left + width, image.width)
-            bottom = min(top + height, image.height)
-            
-            cropped_image = image.crop((left, top, right, bottom))
-            final_image = ensure_square(cropped_image).resize((1800, 1800), Image.Resampling.LANCZOS)
-            
-            st.subheader("プレビュー")
-            st.image(final_image, width=300)
+        if final_image is not None:
             st.write(f"##### 検出モデル: {selected_label}")
             st.write(f"##### 入力サイズ: ×{input_size}")
             st.write(f"##### conf下限値: {conf_threshold:.2f}")
