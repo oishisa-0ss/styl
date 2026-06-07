@@ -200,4 +200,351 @@ def run_application():
         st.session_state.show_labels = False
     if 'conf_threshold' not in st.session_state:
         st.session_state.conf_threshold = 0.20
-    if 'nms_threshold' not in
+    if 'nms_threshold' not in st.session_state:
+        st.session_state.nms_threshold = 0.45
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    models_dir = os.path.join(script_dir, "models")
+
+    if not os.path.exists(models_dir):
+        st.error(st.secrets["MODEL_DIRERR"])
+        sys.exit()
+    
+    model_files = [f for f in os.listdir(models_dir) if f.endswith('.pt')]
+
+    if not model_files:
+        st.error(st.secrets["MODEL_ERR"])
+        sys.exit()
+
+    st.sidebar.header("検出モデル選択")
+
+    model_labels = [os.path.splitext(f)[0] for f in model_files]
+
+    selected_label = st.sidebar.selectbox(
+        "使用するモデルを選択",
+        options=model_labels,
+        index=0,
+        help=st.secrets["MODEL_HELP"]
+    )
+    selected_model = selected_label + ".pt"
+    selected_index = model_labels.index(selected_label)
+    if 'previous_selected_label' not in st.session_state or st.session_state.previous_selected_label != selected_label:
+        st.session_state.previous_selected_label = selected_label
+        if selected_index == 0:
+            st.session_state.conf_threshold = 0.35
+            st.session_state.input_size = 1024
+        elif selected_index == 1:
+            st.session_state.conf_threshold = 0.35
+            st.session_state.input_size = 1024
+
+    model_path = os.path.join(models_dir, selected_model)
+    model = load_model(model_path)
+
+    st.sidebar.header("設定")
+    
+    input_size = st.sidebar.selectbox(
+        "## 入力サイズ",
+        options=[640, 768, 1024, 1280, 1536],
+        key='input_size',
+        help=st.secrets["INPUT_HELP"]
+    )
+    
+    show_labels = st.sidebar.checkbox(
+        "## ラベル表示",
+        key='show_labels',
+        help=st.secrets["LABEL_HELP"]
+    )
+    
+    conf_threshold = st.sidebar.slider(
+        "## conf下限値",
+        min_value=0.05,
+        max_value=0.70,
+        key='conf_threshold',
+        step=0.05,
+        help=st.secrets["CONF_HELP"]
+    )
+    
+    nms_threshold = st.sidebar.slider(
+        "## NMS",
+        min_value=0.05,
+        max_value=0.70,
+        key='nms_threshold',
+        step=0.05,
+        help=st.secrets["NMS_HELP"]
+    )
+    
+    col1, col2 = st.columns([1, 3])
+
+    tabs = st.tabs(["画像をアップロード", "カメラを起動"])
+    
+    with tabs[0]:
+        st.header("画像をアップロード")
+        uploaded_file = st.file_uploader(
+            "JPG/PNG画像をアップロード",
+            type=["jpg", "jpeg", "png"],
+            help=st.secrets["UPLOAD_HELP"]
+        )
+        if uploaded_file:
+            st.session_state.detection_result_bytes = None
+            st.session_state.full_image_bytes = load_image_bytes(uploaded_file)
+    
+    with tabs[1]:
+        st.header("カメラで撮影")
+        st.caption(st.secrets["CMR_ATTENTION"])
+        camera_file = st.camera_input(
+            "接写してください。",
+            help=st.secrets["CAMERA_HELP"]
+        )
+        if camera_file:
+            st.session_state.detection_result_bytes = None
+            st.session_state.full_image_bytes = load_image_bytes(camera_file)
+    
+    if st.session_state.full_image_bytes:
+        st.subheader("切り抜き範囲を選択")
+        st.caption(st.secrets["CLOP_CAP1"])
+        st.caption(st.secrets["CLOP_CAP2"])
+        
+        image = bytes_to_pil(st.session_state.full_image_bytes)
+        image = resize_and_limit(image)
+
+        cropper_display_size = 320
+        display_image = resize_and_limit(image, max_size=cropper_display_size)
+
+        box = st_cropper(
+            display_image,
+            realtime_update=True,
+            box_color="#1B4F72",
+            aspect_ratio=(1, 1),
+            return_type='box',
+            should_resize_image=False
+        )
+        
+        if box:
+            scale_x = image.width / display_image.width
+            scale_y = image.height / display_image.height
+            
+            left = int(box['left'] * scale_x)
+            top = int(box['top'] * scale_y)
+            width = int(box['width'] * scale_x)
+            height = int(box['height'] * scale_y)
+            
+            right = min(left + width, image.width)
+            bottom = min(top + height, image.height)
+            
+            cropped_image = image.crop((left, top, right, bottom))
+            final_image = ensure_square(cropped_image).resize((1800, 1800), Image.Resampling.LANCZOS)
+            
+            st.subheader("プレビュー")
+            st.image(final_image, width=300)
+            st.write(f"##### 検出モデル: {selected_label}")
+            st.write(f"##### 入力サイズ: ×{input_size}")
+            st.write(f"##### conf下限値: {conf_threshold:.2f}")
+            st.write(f"##### NMS: {nms_threshold:.2f}")
+            st.write(st.secrets["MODEL_CONF_CAP1"])
+            st.write(st.secrets["MODEL_CONF_CAP2"])
+
+            if st.button("### 検出開始"):
+                with st.spinner("検出中..."):
+                    results = model(
+                        source=final_image,
+                        imgsz=input_size,
+                        line_width=1,
+                        conf=conf_threshold,
+                        iou=nms_threshold,
+                        max_det=1000
+                    )
+                    
+                    num_detections = len(results[0].boxes)
+                    st.success(f"検出数: {num_detections}")
+                    
+                    if show_labels:
+                        annotated_image = results[0].plot(line_width=2)
+                    else:
+                        annotated_image = results[0].plot(labels=False, line_width=2)
+                    
+                    annotated_image = annotated_image[:, :, ::-1]
+                    annotated_pil = Image.fromarray(annotated_image)
+
+                    annotated_pil = add_timestamp_and_detection_count(
+                        annotated_pil,
+                        num_detections,
+                        selected_label,
+                        input_size,
+                        conf_threshold,
+                        nms_threshold
+                    )
+                    
+                    result_buf = io.BytesIO()
+                    annotated_pil.save(result_buf, format="JPEG", quality=95)
+                    st.session_state.detection_result_bytes = result_buf.getvalue()
+                    del results
+                    gc.collect()
+            
+            if st.session_state.detection_result_bytes:
+                st.image(st.session_state.detection_result_bytes, caption="検出結果", use_container_width=True)
+                st.download_button(
+                    label="結果をダウンロード",
+                    data=st.session_state.detection_result_bytes,
+                    file_name=f"rksi_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg",
+                    mime="image/jpeg",
+                    key="download-detection",
+                    help=st.secrets["DOWNLOAD_HELP"],
+                )
+    
+    st.markdown("---")
+    st.caption(
+        """
+        ※検出結果は、本システムによる自動処理に基づくものであり、その正確性・完全性を保証するものではありません。  
+        記載内容を利用した判断・行為により生じた一切の結果について、当社は責任を負いかねます。
+        """
+    )
+    
+    st.markdown(
+        """
+        <style>
+        body {
+            background: #e0f7e9; 
+            color: #333333;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+
+        .css-1v3fvcr {
+            font-size: 2.5rem;
+            color: #1B4F72;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .css-18e3th9 {
+            color: #2C3E50;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 1.2rem;
+        }
+
+        .stButton button {
+            background-color: #1B4F72;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 30px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 2px;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .stButton button:hover {
+            background-color: #154360;
+            transform: scale(1.05);
+        }
+
+        #download-button {
+            background-color: #16A085;
+        }
+        #download-button:hover {
+            background-color: #148F77;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1B4F72;
+            padding: 20px 40px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .navbar a {
+            color: #FFFFFF;
+            text-decoration: none;
+            margin: 0 20px;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        .navbar a:hover {
+            color: #AED6F1;
+        }
+
+        .cropper-view-box,
+        .cropper-face {
+            border: 3px solid #16A085 !important;
+        }
+
+        footer {
+            visibility: hidden;
+        }
+
+        @media only screen and (min-width: 768px) {
+            .stApp {
+                padding: 50px 150px;
+            }
+        }
+        @media only screen and (max-width: 767px) {
+            .stApp {
+                padding: 20px 20px;
+            }
+            
+            div[data-testid="stMainBlockContainer"], .block-container {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+                padding-top: 20px !important;
+            }
+            
+            img {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+            
+            iframe {
+                max-width: 100% !important;
+            }
+            
+            .css-1e5imcs {
+                font-size: 14px;
+            }
+            
+            .stButton button {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .css-1e5imcs { 
+            font-size: 18px;
+            background-color: #1B4F72;
+            color: #FFFFFF;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 0 10px;
+        }
+        .css-1e5imcs:hover {
+            background-color: #2471A3;
+            color: #D6EAF8;
+        }
+
+        .stCropper {
+            max-width: 100%;
+            height: auto;
+            display: flex;
+            justify-content: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+if __name__ == "__main__":
+    main()
