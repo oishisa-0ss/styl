@@ -35,17 +35,14 @@ def resize_and_limit(image, max_size=1200):
 
 
 def ensure_square(image):
-    if image.width != image.height:
-        min_side = min(image.width, image.height)
-        return image.crop((0, 0, min_side, min_side))
-    return image
-
-
-def clamp_square(image, max_side: int):
-    image = ensure_square(image)
-    if image.width > max_side:
-        image = image.resize((max_side, max_side), Image.Resampling.LANCZOS)
-    return image
+    if image.width == image.height:
+        return image
+    min_side = min(image.width, image.height)
+    left = (image.width - min_side) // 2
+    top = (image.height - min_side) // 2
+    right = left + min_side
+    bottom = top + min_side
+    return image.crop((left, top, right, bottom))
 
 
 def add_timestamp_and_detection_count(image, detection_count, model_name, input_size, conf_threshold, nms_threshold):
@@ -303,25 +300,27 @@ def run_application():
         image = bytes_to_pil(st.session_state.full_image_bytes)
         image = resize_and_limit(image)
 
-        st.subheader("プレビュー")
+        st.subheader("切り抜き範囲・プレビュー")
         enable_crop = st.checkbox("手動で切り抜き範囲を調整する（ズーム・拡大）", value=False)
         
         final_image = None
         
         if enable_crop:
-            st.caption("青い枠線を動かして、検出したい範囲を指定してください。")
+            st.caption("青い枠線を動かして、検出したい範囲（正方形）を指定してください。")
             cropped_image = st_cropper(
                 image,
                 realtime_update=True,
                 box_color="#1B4F72",
-                aspect_ratio=None,
+                aspect_ratio=(1, 1),
                 should_resize_image=True
             )
             if cropped_image:
-                final_image = cropped_image
+                final_image = cropped_image.resize((1800, 1800), Image.Resampling.LANCZOS)
         else:
-            final_image = image
-            st.image(final_image, use_container_width=True)
+            st.caption("現在、画像中央が最大の正方形で自動選択されています。枠の修正は不要です。")
+            auto_square = ensure_square(image)
+            final_image = auto_square.resize((1800, 1800), Image.Resampling.LANCZOS)
+            st.image(final_image, width=300, caption="自動正方形プレビュー")
             
         if final_image is not None:
             st.write(f"##### 検出モデル: {selected_label}")
