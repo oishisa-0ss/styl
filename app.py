@@ -298,8 +298,7 @@ def run_application():
     
     if st.session_state.full_image_bytes:
         image = bytes_to_pil(st.session_state.full_image_bytes)
-        image_square = ensure_square(image)
-        image_high_res = resize_and_limit(image_square, max_size=1200)
+        image = resize_and_limit(image)
 
         st.subheader("切り抜き範囲・プレビュー")
         enable_crop = st.checkbox("手動で切り抜き範囲を調整する（ズーム・拡大）", value=False)
@@ -309,7 +308,7 @@ def run_application():
         if enable_crop:
             st.caption("青い枠線を動かして、検出したい範囲（正方形）を指定してください。")
             cropper_display_size = 300
-            display_image = resize_and_limit(image_high_res, max_size=cropper_display_size)
+            display_image = resize_and_limit(image, max_size=cropper_display_size)
             
             box = st_cropper(
                 display_image,
@@ -321,22 +320,38 @@ def run_application():
             )
             
             if box:
-                scale_x = image_high_res.width / display_image.width
-                scale_y = image_high_res.height / display_image.height
+                scale_x = image.width / display_image.width
+                scale_y = image.height / display_image.height
                 
                 left = int(box['left'] * scale_x)
                 top = int(box['top'] * scale_y)
                 width = int(box['width'] * scale_x)
                 height = int(box['height'] * scale_y)
                 
-                right = min(left + width, image_high_res.width)
-                bottom = min(top + height, image_high_res.height)
+                size = max(width, height)
+                size = min(size, image.width, image.height)
                 
-                cropped_image = image_high_res.crop((left, top, right, bottom))
+                if left < 0:
+                    left = 0
+                if top < 0:
+                    top = 0
+                if left + size > image.width:
+                    left = image.width - size
+                if top + size > image.height:
+                    top = image.height - size
+                
+                right = left + size
+                bottom = top + size
+                
+                cropped_image = image.crop((left, top, right, bottom))
                 final_image = cropped_image.resize((1800, 1800), Image.Resampling.LANCZOS)
         else:
-            st.caption("現在、画像全体（正方形）が自動選択されています。枠の修正は不要です。")
-            final_image = image_high_res.resize((1800, 1800), Image.Resampling.LANCZOS)
+            st.caption("現在、画像中央が最大の正方形で自動選択されています。枠の修正は不要です。")
+            min_side = min(image.width, image.height)
+            c_left = (image.width - min_side) // 2
+            c_top = (image.height - min_side) // 2
+            auto_square = image.crop((c_left, c_top, c_left + min_side, c_top + min_side))
+            final_image = auto_square.resize((1800, 1800), Image.Resampling.LANCZOS)
             st.image(final_image, width=300, caption="全体プレビュー")
             
         if final_image is not None:
