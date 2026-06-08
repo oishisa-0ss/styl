@@ -307,15 +307,32 @@ def run_application():
         
         if enable_crop:
             st.caption("青い枠線を動かして、検出したい範囲（正方形）を指定してください。")
-            cropped_image = st_cropper(
-                image,
+            cropper_display_size = 290
+            display_image = resize_and_limit(image, max_size=cropper_display_size)
+            
+            box = st_cropper(
+                display_image,
                 realtime_update=True,
                 box_color="#1B4F72",
                 aspect_ratio=(1, 1),
-                should_resize_image=True
+                return_type='box',
+                should_resize_image=False
             )
-            if cropped_image:
-                final_image = cropped_image.resize((1800, 1800), Image.Resampling.LANCZOS)
+            
+            if box:
+                scale_x = image.width / display_image.width
+                scale_y = image.height / display_image.height
+                
+                left = int(box['left'] * scale_x)
+                top = int(box['top'] * scale_y)
+                width = int(box['width'] * scale_x)
+                height = int(box['height'] * scale_y)
+                
+                right = min(left + width, image.width)
+                bottom = min(top + height, image.height)
+                
+                cropped_image = image.crop((left, top, right, bottom))
+                final_image = ensure_square(cropped_image).resize((1800, 1800), Image.Resampling.LANCZOS)
         else:
             st.caption("現在、画像中央が最大の正方形で自動選択されています。枠の修正は不要です。")
             auto_square = ensure_square(image)
