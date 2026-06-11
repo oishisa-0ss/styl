@@ -303,7 +303,7 @@ def run_application():
         image = resize_and_limit(image)
 
         st.subheader("切り抜き範囲・プレビュー")
-        enable_crop = st.checkbox("手動で切り抜き範囲を調整する（ズーム・拡大）", value=False)
+        enable_crop = st.checkbox("手動で切り抜き範囲を調整する（ズーム・拡大）", value=True)
         
         final_image = None
         
