@@ -1,9 +1,4 @@
-*.env
-*.json
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
+*.env
 .streamlit/secrets.toml
-logs-*.txt
-起動時バージョン.txt
