@@ -219,12 +219,16 @@ def run_application():
 
     model_labels = [os.path.splitext(f)[0] for f in model_files]
 
+    DEFAULT_MODEL_LABEL = "01_XMG_s"
+    default_index = model_labels.index(DEFAULT_MODEL_LABEL) if DEFAULT_MODEL_LABEL in model_labels else 0
+
     selected_label = st.sidebar.selectbox(
         "使用するモデルを選択",
         options=model_labels,
-        index=0,
+        index=default_index,
         help=st.secrets["MODEL_HELP"]
     )
+
     selected_model = selected_label + ".pt"
     selected_index = model_labels.index(selected_label)
     if 'previous_selected_label' not in st.session_state or st.session_state.previous_selected_label != selected_label:
