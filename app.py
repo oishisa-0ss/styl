@@ -128,6 +128,9 @@ def add_timestamp_and_detection_count(image, detection_count, model_name, input_
     return image.convert("RGB")
 
 
+NEW_COUNTER_URL = "https://ryokusui-counter.web.app/"
+
+
 def main():
     if 'page' not in st.session_state:
         st.session_state.page = 'home'
@@ -163,9 +166,8 @@ def show_home_page():
     
     st.markdown("<br><br>", unsafe_allow_html=True)
 
-    if st.button(st.secrets["USE_BUTTON"]):
-        st.session_state.page = 'app'
-        st.rerun()
+    # 新しい Webカウンター（Firebase Hosting＋Cloud Run）へ移動する
+    st.link_button(st.secrets["USE_BUTTON"], NEW_COUNTER_URL, type="primary")
 
 
 def run_application():
