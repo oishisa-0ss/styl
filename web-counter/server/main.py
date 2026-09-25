@@ -1,4 +1,5 @@
 import io
+import math
 import os
 import sys
 import time
@@ -11,7 +12,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from counter import IMGSZ, SIDE, ColonyDetector, Dish, count_photo, detect_dish
 
 MAX_BYTES = 15 * 1024 * 1024
-Image.MAX_IMAGE_PIXELS = 50_000_000
+MAX_PIXELS = 40_000_000
+Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 MODEL = "01_XMG_s"
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -27,12 +29,17 @@ def health():
 @app.post("/api/count")
 async def count(image: UploadFile = File(...), cx: float | None = Form(None), cy: float | None = Form(None),
                 r: float | None = Form(None)):
+    if any(v is not None and not math.isfinite(v) for v in (cx, cy, r)):
+        raise HTTPException(400, "範囲の値が正しくありません")
     data = await image.read()
     if len(data) > MAX_BYTES:
         raise HTTPException(413, "写真が大きすぎます（15MB まで）")
     try:
-        im = ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB")
-    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        src = Image.open(io.BytesIO(data))
+        if src.width * src.height > MAX_PIXELS:
+            raise HTTPException(413, "写真の画素数が多すぎます")
+        im = ImageOps.exif_transpose(src).convert("RGB")
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError, Image.DecompressionBombWarning):
         raise HTTPException(400, "写真を読み込めませんでした")
     w, h = im.size
     t0 = time.perf_counter()

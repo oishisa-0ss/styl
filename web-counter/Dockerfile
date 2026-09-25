@@ -5,7 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 && rm -rf /var/lib/apt/lists/* \
+    && useradd --no-create-home --uid 10001 app
 
 WORKDIR /app
 COPY server/requirements.txt server/requirements.txt
@@ -17,4 +18,5 @@ COPY server/main.py server/main.py
 
 ENV PORT=8080 ORT_THREADS=2
 WORKDIR /app/server
+USER app
 CMD exec uvicorn main:app --host 0.0.0.0 --port ${PORT} --workers 1
