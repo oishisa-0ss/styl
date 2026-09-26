@@ -1023,7 +1023,7 @@ async function renderOutput(comment = '') {
   try { await Promise.all([document.fonts.load(`700 64px ${FONT}`), document.fonts.load(`400 30px ${FONT}`)]); } catch (_) {}
   const c = document.createElement('canvas');
   const g = c.getContext('2d');
-  const text = comment.trim().replace(/\s+/g, ' ');
+  const text = [...comment.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, ' ').replace(/\s+/g, ' ').trim()].slice(0, 60).join('');
   const CF = `700 56px ${FONT}`, CLH = 76, CPAD = 40;
   g.font = CF;
   const cl = text ? wrapLines(g, text, W - CPAD * 2, 3) : [];
