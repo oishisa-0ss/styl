@@ -32,7 +32,7 @@ const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
 const buzz = ms => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (_) {} };
 const tipText = (kind, how) => kind === 'outside' ? 'シャーレの外です' : `${how}${VERB[kind]}`;
 
-const settings = { conf: 0.45, showCand: false, antsUntil: 0 };
+const settings = { conf: 0.40, showCand: false, antsUntil: 0 };
 let cur = null;
 let job = null;
 let busy = false;
