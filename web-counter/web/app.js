@@ -14,7 +14,7 @@ const REVEAL_MS = 1100;
 const LS = 140;
 const INSIDE = 1.06;
 const C = { ai: '#2F6FEB', add: '#E8702A', off: '#9AA5A0' };
-const FONT = '"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif';
+const FONT = '"Noto Sans JP","BIZ UDPGothic","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif';
 const VERB = { ai: '除外', off: '数に戻す', addc: '追加を取り消す', user: '追加を取り消す', cand: '数に入れる', snap: '追加', new: '追加' };
 const RESULT = { ai: C.off, off: C.ai, addc: C.off, user: C.off, cand: C.add, snap: C.add, new: C.add, outside: C.off };
 
@@ -357,7 +357,7 @@ function renderDish(now) {
   const k = knobOf(d), kx = X(k.x), ky = Y(k.y);
   ctx.beginPath(); ctx.arc(kx, ky, 13, 0, Math.PI * 2);
   ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
-  ctx.lineWidth = 2.5; ctx.strokeStyle = '#2E7D5B'; ctx.stroke();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = '#0E6B68'; ctx.stroke();
   ctx.beginPath(); ctx.lineWidth = 2; ctx.lineCap = 'round';
   ctx.moveTo(kx - 5, ky - 5); ctx.lineTo(kx + 5, ky + 5);
   ctx.moveTo(kx + 5, ky + 5); ctx.lineTo(kx + 5, ky + 1); ctx.moveTo(kx + 5, ky + 5); ctx.lineTo(kx + 1, ky + 5);
@@ -456,9 +456,9 @@ function drawGhost(f, now, lw) {
 function drawScan(scanY) {
   const y = scanY * view.s + view.ty;
   const g = ctx.createLinearGradient(0, y - 70, 0, y);
-  g.addColorStop(0, 'rgba(200,215,216,0)'); g.addColorStop(1, 'rgba(200,215,216,.30)');
+  g.addColorStop(0, 'rgba(25,163,154,0)'); g.addColorStop(1, 'rgba(25,163,154,.30)');
   ctx.fillStyle = g; ctx.fillRect(0, y - 70, size, 70);
-  ctx.fillStyle = 'rgba(235,242,242,.9)'; ctx.fillRect(0, y - 1, size, 2);
+  ctx.fillStyle = 'rgba(170,236,229,.95)'; ctx.fillRect(0, y - 1, size, 2);
 }
 function drawSpotlight(now) {
   const b = review.items[review.i];
@@ -830,6 +830,11 @@ function syncUI() {
     : '円の中をドラッグで移動、右下の●で大きさ、円の外をタップするとそこへ移動します。';
 }
 
+function whenText(d) {
+  if (!d) return '';
+  const p = Object.fromEntries(new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d).map(x => [x.type, x.value]));
+  return `${p.year}.${p.month}.${p.day} ${p.hour}:${p.minute}`;
+}
 const odo = $('odo');
 let shown = null;
 function setCount(n, silent) {
@@ -876,7 +881,8 @@ function showEmpty() {
   shown = null;
   $('totalSr').textContent = '';
   for (const id of ['nAi', 'nOff', 'nAdd']) $(id).textContent = id === 'nAi' ? '0' : id === 'nOff' ? '−0' : '＋0';
-  $('edited').hidden = true; $('undo').disabled = true; $('redo').disabled = true;
+  $('edited').hidden = true; $('rvWait').hidden = true; $('when').textContent = '';
+  $('undo').disabled = true; $('redo').disabled = true;
   $('candN').hidden = true; $('rvBadge').hidden = true;
   $('hist').innerHTML = ''; $('histSum').textContent = '';
 }
@@ -887,14 +893,19 @@ function update(o = {}) {
   $('nAi').textContent = t.ai;
   $('nOff').textContent = '−' + t.off;
   $('nAdd').textContent = '＋' + t.add;
-  $('edited').hidden = !t.edited;
+  $('edited').hidden = false;
+  $('edited').classList.toggle('is-edited', t.edited);
+  $('editedT').textContent = t.edited ? '手修正あり' : 'AIの結果のまま';
+  $('when').textContent = whenText(cur.at);
   $('undo').disabled = !cur.undo.length;
   $('redo').disabled = !cur.redo.length;
   $('candN').textContent = t.cand; $('candN').hidden = !t.cand;
   $('candBtn').setAttribute('aria-pressed', String(settings.showCand));
   const rn = reviewItems().length;
   $('rvBadge').textContent = rn; $('rvBadge').hidden = !rn;
+  $('rvWaitN').textContent = rn; $('rvWait').hidden = !rn;
   $('confV').textContent = settings.conf.toFixed(2);
+  $('confCell').textContent = settings.conf.toFixed(2);
   drawHist(t);
   if (review) updateReviewUI();
   updateDishPanel();
@@ -1020,8 +1031,8 @@ async function renderOutput(comment = '') {
   c.width = W; c.height = W + band;
   if (band) {
     g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, band);
-    g.fillStyle = '#2E7D5B'; g.fillRect(0, band - 6, W, 6);
-    g.font = CF; g.fillStyle = '#15212C'; g.textBaseline = 'top';
+    g.fillStyle = '#0E6B68'; g.fillRect(0, band - 6, W, 6);
+    g.font = CF; g.fillStyle = '#0F2B2B'; g.textBaseline = 'top';
     cl.forEach((l, i) => g.fillText(l, CPAD, CPAD + i * CLH));
     g.translate(0, band);
   }
@@ -1048,10 +1059,10 @@ async function renderOutput(comment = '') {
     timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
   }).formatToParts(new Date()).map(p => [p.type, p.value]));
   const lines = [
-    { t: `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`, f: `400 30px ${FONT}`, c: '#44526A', h: 44 },
-    { t: `大腸菌　${t.total} 個`, f: `700 64px ${FONT}`, c: '#15212C', h: 82 },
-    { t: `AI ${t.ai} − 除外 ${t.off} ＋ 追加 ${t.add}${t.edited ? '（手修正あり）' : ''}`, f: `400 30px ${FONT}`, c: '#15212C', h: 46 },
-    { t: `01_XMG_s・conf ${settings.conf.toFixed(2)}・入力 ${cur.imgsz || 1280}`, f: `400 26px ${FONT}`, c: '#56657A', h: 40 },
+    { t: `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`, f: `400 30px ${FONT}`, c: '#587270', h: 44 },
+    { t: `大腸菌　${t.total} 個`, f: `700 64px ${FONT}`, c: '#0F2B2B', h: 82 },
+    { t: `AI ${t.ai} − 除外 ${t.off} ＋ 追加 ${t.add}${t.edited ? '（手修正あり）' : ''}`, f: `400 30px ${FONT}`, c: '#0F2B2B', h: 46 },
+    { t: `01_XMG_s・conf ${settings.conf.toFixed(2)}・入力 ${cur.imgsz || 1280}`, f: `400 26px ${FONT}`, c: '#587270', h: 40 },
   ];
   const legend = [['AI検出', C.ai, []], ['追加', C.add, []], ['除外', C.off, [8, 5]]];
   g.textBaseline = 'top';
@@ -1069,14 +1080,14 @@ async function renderOutput(comment = '') {
   g.font = `400 26px ${FONT}`;
   for (const [name, col, dash] of legend) {
     g.setLineDash(dash); g.lineWidth = 4; g.strokeStyle = col; g.strokeRect(x + 2, y + 4, 22, 22); g.setLineDash([]);
-    g.fillStyle = '#15212C'; g.fillText(name, x + 34, y + 2);
+    g.fillStyle = '#0F2B2B'; g.fillText(name, x + 34, y + 2);
     x += 34 + g.measureText(name).width + 26;
   }
   const foot = '検出結果は参考値です。点線の円はシャーレとして数えた範囲です。';
   g.font = `400 24px ${FONT}`;
   const fw = g.measureText(foot).width;
   g.fillStyle = 'rgba(255,255,255,.8)'; g.fillRect(24, W - 64, fw + 28, 40);
-  g.fillStyle = '#44526A'; g.fillText(foot, 38, W - 56);
+  g.fillStyle = '#587270'; g.fillText(foot, 38, W - 56);
   const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.9));
   return { blob, name: `rksi_${parts.year}${parts.month}${parts.day}_${parts.hour}${parts.minute}_${t.total}個.jpg` };
 }
@@ -1275,7 +1286,7 @@ async function runFirstCount() {
   try { j = await countWithBusy(null, 'シャーレを探しています…'); }
   catch (e) { showErr(e.message); return; }
   const st = { sm: { w: j.w, h: j.h, boxes: j.boxes }, photo: job.canvas, img: null, thumb: null, reveal: null,
-    dishAuto: { cx: j.dish[0], cy: j.dish[1], r: j.dish[2] } };
+    dishAuto: { cx: j.dish[0], cy: j.dish[1], r: j.dish[2] }, at: new Date() };
   st.imgsz = j.imgsz;
   applyDish(st, st.dishAuto);
   cur = st; mode = 'edit'; hover = null; fx = []; floats = []; cam = null; gest = null;
