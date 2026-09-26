@@ -194,6 +194,12 @@ input[type=range]{width:100%;accent-color:var(--green);margin:0}
 .panel h2,.coach-card h2{margin:0;font-size:17px;text-wrap:balance}
 .panel img{display:block;width:100%;border-radius:14px}
 .fname{font:500 12.5px var(--num);color:var(--muted);word-break:break-all}
+.cmt{display:grid;gap:6px}
+.cmt label{font-size:13px;font-weight:700;color:var(--ink-2)}
+.cmt small{font-weight:400;color:var(--muted)}
+.cmt input{width:100%;font:inherit;font-size:16px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink)}
+.cmt input:focus{outline:2px solid var(--focus);outline-offset:1px;background:var(--bg)}
+.sheet.pending #outDl,.sheet.pending #outShare{opacity:.45;pointer-events:none}
 .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .acts a,.acts button{min-height:46px;padding:0 18px;border-radius:999px;border:1.5px solid var(--line);background:transparent;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink-2)}
 .acts .ic{width:18px;height:18px}
@@ -412,6 +418,10 @@ input[type=range]{width:100%;accent-color:var(--green);margin:0}
   <div class="panel">
     <h2 id="sheetT">保存する画像</h2>
     <img id="outImg" alt="枠と件数を書き込んだ結果画像">
+    <div class="cmt">
+      <label for="outCmt">コメント<small>（任意・画像の上に入ります）</small></label>
+      <input type="text" id="outCmt" maxlength="60" placeholder="例：〇〇処理場 放流水 10倍" autocomplete="off" enterkeyhint="done">
+    </div>
     <div class="fname" id="outName"></div>
     <p class="note" id="outNote"></p>
     <div class="acts">

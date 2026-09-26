@@ -995,10 +995,36 @@ $('reset').addEventListener('click', () => {
   toast('AIの結果に戻しました。「元に戻す」で取り消せます');
 });
 
-async function renderOutput() {
+function wrapLines(g, text, maxW, maxLines) {
+  const out = [];
+  let line = '';
+  for (const ch of text) {
+    if (line && g.measureText(line + ch).width > maxW) {
+      out.push(line);
+      line = ch === ' ' || ch === '　' ? '' : ch;
+      if (out.length === maxLines) { line = ''; out[maxLines - 1] = out[maxLines - 1].replace(/.$/, '…'); break; }
+    } else line += ch;
+  }
+  if (line) out.push(line);
+  return out;
+}
+async function renderOutput(comment = '') {
   try { await Promise.all([document.fonts.load(`700 64px ${FONT}`), document.fonts.load(`400 30px ${FONT}`)]); } catch (_) {}
-  const c = document.createElement('canvas'); c.width = W; c.height = W;
+  const c = document.createElement('canvas');
   const g = c.getContext('2d');
+  const text = comment.trim().replace(/\s+/g, ' ');
+  const CF = `700 56px ${FONT}`, CLH = 76, CPAD = 40;
+  g.font = CF;
+  const cl = text ? wrapLines(g, text, W - CPAD * 2, 3) : [];
+  const band = cl.length ? CPAD * 2 + cl.length * CLH - (CLH - 56) : 0;
+  c.width = W; c.height = W + band;
+  if (band) {
+    g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, W, band);
+    g.fillStyle = '#2E7D5B'; g.fillRect(0, band - 6, W, 6);
+    g.font = CF; g.fillStyle = '#15212C'; g.textBaseline = 'top';
+    cl.forEach((l, i) => g.fillText(l, CPAD, CPAD + i * CLH));
+    g.translate(0, band);
+  }
   g.drawImage(cur.img, 0, 0, W, W);
   const ds = cur.dishSq;
   g.setLineDash([16, 12]); g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.8)';
@@ -1055,10 +1081,12 @@ async function renderOutput() {
   return { blob, name: `rksi_${parts.year}${parts.month}${parts.day}_${parts.hour}${parts.minute}_${t.total}個.jpg` };
 }
 let lastFocus = null, outUrl = null, outFile = null;
-async function openSheet() {
-  if (!cur || mode !== 'edit' || trans || busy) return;
-  lastFocus = document.activeElement;
-  const out = await renderOutput();
+let outSeq = 0, cmtTimer = 0;
+
+async function refreshOutput() {
+  const seq = ++outSeq;
+  const out = await renderOutput(cur.comment || '');
+  if (seq !== outSeq) return;
   if (outUrl) URL.revokeObjectURL(outUrl);
   outUrl = URL.createObjectURL(out.blob);
   outFile = new File([out.blob], out.name, { type: 'image/jpeg' });
@@ -1070,11 +1098,28 @@ async function openSheet() {
   let canShare = false;
   try { canShare = !framed && !!navigator.canShare && navigator.canShare({ files: [outFile] }); } catch (_) {}
   $('outShare').hidden = !canShare;
+  $('sheet').classList.remove('pending');
+}
+async function openSheet() {
+  if (!cur || mode !== 'edit' || trans || busy) return;
+  lastFocus = document.activeElement;
+  $('outCmt').value = cur.comment || '';
+  await refreshOutput();
   $('outNote').textContent = framed ? 'このページでは保存できません。' : '';
   $('sheet').hidden = false;
   $('sheetClose').focus();
 }
+$('outCmt').addEventListener('input', e => {
+  if (!cur) return;
+  cur.comment = e.target.value;
+  $('sheet').classList.add('pending');
+  clearTimeout(cmtTimer);
+  cmtTimer = setTimeout(refreshOutput, 300);
+});
+$('outCmt').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
+$('outDl').addEventListener('click', e => { if ($('sheet').classList.contains('pending')) e.preventDefault(); });
 $('outShare').addEventListener('click', async () => {
+  if ($('sheet').classList.contains('pending')) return;
   try { await navigator.share({ files: [outFile], title: '大腸菌数' }); }
   catch (e) { if (e && e.name !== 'AbortError') toast('共有できませんでした。「保存」をお使いください'); }
 });
@@ -1085,7 +1130,7 @@ $('sheet').addEventListener('click', e => { if (e.target === $('sheet')) closeSh
 
 const COACH = [
   { t: '枠をタップすると除外', p: 'AIが間違えて囲んだ枠をタップすると、灰色の点線になって数から外れます。もう一度タップすると戻ります。' },
-  { t: '何もない所をタップすると追加', p: 'AIが見落としたコロニーの上をタップすると、青い枠で追加されます。' },
+  { t: '何もない所をタップすると追加', p: 'AIが見落としたコロニーの上をタップすると、オレンジの枠で追加されます。' },
   { t: '2本指で拡大', p: '密集した所は2本指で広げるか、右上の＋で拡大してから直すと確実です。' },
   { t: '長押しで虫めがね', p: '指で隠れて見えないときは長押しします。虫めがねを見ながら指をずらして狙い、離すと決まります。' },
   { t: '円がずれていたら「範囲を直す」', p: 'シャーレは自動で見つけます。円がずれていたら写真の左上の「範囲を直す」を押し、円をドラッグして合わせ、右下の●で大きさを変えます。' },
