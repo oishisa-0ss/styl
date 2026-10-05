@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F1F5F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1817" media="(prefers-color-scheme: dark)">
+<meta name="description" content="シャーレの写真から大腸菌のコロニーを自動で数えます。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='21' fill='%23DCEDEA' stroke='%230E6B68' stroke-width='3.4'/%3E%3Ccircle cx='16.5' cy='19' r='3.4' fill='%230E6B68'/%3E%3Ccircle cx='28' cy='31' r='3' fill='%230E6B68'/%3E%3Ccircle cx='18.5' cy='31.5' r='2' fill='%23A86A98'/%3E%3Crect x='23.6' y='11.1' width='10.8' height='10.8' fill='none' stroke='%232F6FEB' stroke-width='2.4'/%3E%3Ccircle cx='29' cy='16.5' r='3' fill='%232F6FEB'/%3E%3C/svg%3E">
+<title>緑水Webカウンター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&display=swap">
+<style>
+:root{
+  --bg:#F1F5F3; --paper:#F7FAF9; --soft:#E6EFEC; --soft-2:#D2E1DD; --ink:#0F2B2B; --ink-2:#28474A; --muted:#587270; --line:#C5D6D1; --rule:#0F2B2B;
+  --green:#0E6B68; --green-ink:#F1F5F3; --green-soft:#DCEDEA; --teal:#19A39A; --focus:#0E6B68;
+  --warn:#A2551B; --warn-soft:#FBEBDD; --art-bg:#E7F0ED; --art-line:#8FB3AC; --stage:#0F2B2B;
+  --ai:#2F6FEB; --add:#E8702A; --add-ink:#B4520F; --off:#9AA5A0;
+  --font:"LINE Seed JP","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0D1817; --paper:#101E1C; --soft:#142422; --soft-2:#1C302D; --ink:#E3EFEC; --ink-2:#C1D3CF; --muted:#8FA8A3; --line:#28413E; --rule:#C1D3CF;
+    --green:#3CC4B9; --green-ink:#062120; --green-soft:#16302D; --teal:#3CC4B9; --focus:#3CC4B9;
+    --warn:#E6A36E; --warn-soft:#3A2717; --art-bg:#132624; --art-line:#2E5550; --stage:#081110; --add-ink:#F0A060;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0D1817; --paper:#101E1C; --soft:#142422; --soft-2:#1C302D; --ink:#E3EFEC; --ink-2:#C1D3CF; --muted:#8FA8A3; --line:#28413E; --rule:#C1D3CF;
+  --green:#3CC4B9; --green-ink:#062120; --green-soft:#16302D; --teal:#3CC4B9; --focus:#3CC4B9;
+  --warn:#E6A36E; --warn-soft:#3A2717; --art-bg:#132624; --art-line:#2E5550; --stage:#081110; --add-ink:#F0A060;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-weight:500;font-size:15px;line-height:1.65;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sr,.tl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+.app{display:flex;flex-direction:column;gap:14px;padding-block:14px 0;padding-inline:16px;max-width:560px;margin:0 auto}
+
+.top{display:grid;gap:8px}
+.top-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{display:block;height:20px;width:auto}
+.top-r{display:flex;align-items:center;gap:8px}
+.tbtn{width:40px;height:40px;display:grid;place-items:center;border:1.5px solid var(--green);border-radius:50%;background:transparent;color:var(--green);cursor:pointer}
+.tbtn .ic{width:20px;height:20px}
+.tbtn:hover{background:var(--green-soft)}
+.tbtn.wide{width:auto;display:inline-flex;align-items:center;gap:5px;padding:0 13px 0 10px;border-radius:20px;font-size:13px;font-weight:700;white-space:nowrap}
+@media (max-width:389px){.logo{height:17px}}
+@media (max-width:359px){.tbtn.wide{width:40px;padding:0;gap:0;justify-content:center;font-size:0}}
+.title-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.brand{margin:0;line-height:0}
+.logo-svg{display:block;width:auto;height:48px;overflow:visible}
+.lg-plate{fill:var(--green-soft)}
+.lg-rim{fill:none;stroke:var(--green);stroke-width:2.4;animation:lgdraw 1s ease-out .1s backwards}
+.lg-in{fill:none;stroke:var(--green);stroke-width:1;opacity:.3}
+.lg-c{fill:var(--green);transform-box:fill-box;transform-origin:center;animation:lgpop .45s cubic-bezier(.3,1.6,.5,1) calc(.55s + var(--i) * .09s) backwards}
+.lg-m{fill:#A86A98} .lg-b{fill:var(--ai)}
+.lg-box{fill:none;stroke:var(--ai);stroke-width:1.6;transform-box:fill-box;transform-origin:center;animation:lgdraw .4s ease-out 1.15s backwards,lgbox 7s ease-in-out 2.4s infinite}
+.lg-scan{fill:var(--teal);opacity:0;animation:lgscan 7s ease-in-out 2.4s infinite}
+.lg-g{fill:currentColor;animation:lgrise .5s cubic-bezier(.2,.9,.25,1) calc(.3s + var(--i) * .045s) backwards}
+.lg-kick{color:var(--green)} .lg-title{color:var(--ink)}
+@keyframes lgdraw{from{stroke-dasharray:1;stroke-dashoffset:1}to{stroke-dasharray:1;stroke-dashoffset:0}}
+@keyframes lgpop{from{transform:scale(0);opacity:0}}
+@keyframes lgrise{from{opacity:0;transform:translateY(6px)}}
+@keyframes lgscan{0%{transform:translateY(0);opacity:0}6%{opacity:.9}38%{transform:translateY(32px)}70%{transform:translateY(0);opacity:.9}76%,100%{transform:translateY(0);opacity:0}}
+@keyframes lgbox{0%,12%,22%,57%,67%,100%{transform:scale(1)}16%,61%{transform:scale(1.22)}}
+.when{font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap}
+.wave{display:block;width:100%;height:14px;overflow:hidden}
+.wave .w1{animation:wave 7s linear infinite} .wave .w2{animation:waveR 11s linear infinite}
+@keyframes wave{from{transform:translateX(0)}to{transform:translateX(-60px)}}
+@keyframes waveR{from{transform:translateX(-60px)}to{transform:translateX(0)}}
+
+.count{display:grid;gap:10px}
+.count-main{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.label{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--muted)}
+.val{position:relative;display:flex;align-items:baseline;gap:8px}
+.odo{display:inline-flex;font-weight:900;font-size:80px;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.odo .dash{line-height:1;color:var(--line)}
+.dg{display:inline-block;height:1em;overflow:hidden;transition:width .55s cubic-bezier(.2,.9,.25,1)}
+.strip{display:block;transform:translateY(calc(var(--d,0) * -1em));transition:transform .55s cubic-bezier(.2,.9,.25,1)}
+.strip>span{display:block;height:1em;line-height:1;text-align:center}
+.unit{font-size:20px;font-weight:700}
+.delta-host{position:relative;align-self:flex-start;width:0;height:0}
+.delta{position:absolute;left:8px;top:4px;font-weight:900;font-size:18px;white-space:nowrap;animation:rise .9s ease-out forwards}
+.delta.up{color:var(--add-ink)} .delta.down{color:var(--off)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}20%{opacity:1}to{opacity:0;transform:translateY(-22px)}}
+.state-col{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-bottom:8px}
+.state{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px 0 11px;border-radius:15px;background:var(--green-soft);color:var(--green);font-size:12.5px;font-weight:700;white-space:nowrap}
+.state .dot{position:relative;width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.state .dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1.5px solid currentColor;animation:pulse 2s ease-out infinite}
+@keyframes pulse{from{transform:scale(.5);opacity:.8}to{transform:scale(1.4);opacity:0}}
+.state.is-edited{background:var(--warn-soft);color:var(--warn)}
+.tally{margin:0;display:flex;flex-wrap:wrap;gap:2px 16px;padding:8px 0 0;border-top:1.5px solid var(--rule);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tally b{margin-left:3px;font-size:15px;font-weight:900;color:var(--ink)}
+.tally .t-ai{color:var(--ai)} .tally .t-add{color:var(--add-ink)}
+
+.stage-wrap{display:flex;justify-content:center;min-height:0}
+.stage{position:relative;width:100%;max-width:100%;aspect-ratio:1/1;border:1px solid var(--rule);border-radius:4px;overflow:hidden;background:var(--stage);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.stage canvas#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.glass{background:rgba(241,245,243,.95);box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.zoom{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:0;padding:2px;border:1px solid #0F2B2B;border-radius:4px;color:#0F2B2B}
+.zoom button{width:36px;height:36px;border:0;border-radius:3px;background:transparent;color:#0F2B2B;cursor:pointer;display:grid;place-items:center}
+.zoom button .ic{width:19px;height:19px}
+.zoom button:hover:not(:disabled){background:#DCEDEA}
+.zoom button:disabled{opacity:.3;cursor:default}
+.zoom .lv{min-width:36px;text-align:center;font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums}
+.ov-btn{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:5px;height:40px;padding:0 13px 0 10px;border:1px solid #0F2B2B;border-radius:4px;color:#0E6B68;font-size:13px;font-weight:700;cursor:pointer}
+.ov-btn .ic{width:19px;height:19px}
+.ov-btn:hover{background:#fff}
+#mini{position:absolute;left:10px;bottom:10px;width:84px;height:84px;border-radius:4px;box-shadow:0 0 0 2px #fff,0 6px 16px rgba(0,0,0,.35);cursor:pointer;animation:fade .2s}
+.tip{position:absolute;left:0;top:0;padding:4px 11px;border-radius:4px;background:rgba(15,43,43,.9);color:#fff;font-size:12px;white-space:nowrap;pointer-events:none}
+.loupe{position:absolute;left:0;top:0;width:140px;display:grid;justify-items:center;gap:8px;pointer-events:none;animation:lpin .16s ease-out}
+.loupe canvas{width:140px;height:140px;border-radius:50%;box-shadow:0 0 0 3px #fff,0 0 0 5px rgba(14,107,104,.55),0 14px 30px rgba(0,0,0,.4)}
+.loupe span{padding:3px 12px;border-radius:4px;background:rgba(15,43,43,.92);color:#fff;font-size:12px;font-weight:700;white-space:nowrap}
+@keyframes lpin{from{opacity:0;scale:.7}}
+@keyframes fade{from{opacity:0}}
+.start,.busy,.err{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+.start{background:var(--art-bg);color:var(--ink)}
+.start::before{content:"";position:absolute;inset:10px;border:1.5px dashed var(--art-line);pointer-events:none}
+.start-art{position:relative;width:min(40%,150px);height:auto;overflow:visible}
+.start-art .sa-plate{fill:var(--paper);stroke:#9DB9B3;stroke-width:1}
+.start-art .sa-rim{fill:none;stroke:var(--ink);stroke-width:1.6}
+.start-art .sa-t{fill:#2F6FEB} .start-art .sa-m{fill:#9E5C8E}
+.start-art .sa-bx{fill:none;stroke:#2F6FEB;stroke-width:1.6}
+.start-art .dr{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1s ease-out forwards}
+.start-art .pp{transform-box:fill-box;transform-origin:center;opacity:0;animation:pop .5s ease-out forwards}
+.start-art .sc{animation:scan 3.6s ease-in-out 2.4s infinite;opacity:0}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes scan{0%{transform:translateY(8px);opacity:0}8%{opacity:1}42%{transform:translateY(160px);opacity:1}50%,100%{transform:translateY(160px);opacity:0}}
+.start-t{position:relative;margin:0;font-size:15px;font-weight:700;letter-spacing:.05em}
+.start-s{position:relative;margin:-6px 0 0;font-size:12px;color:var(--muted)}
+.start-acts{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.big-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 20px;border-radius:4px;border:1.5px solid rgba(255,255,255,.5);background:transparent;color:#fff;font-size:15px;font-weight:700;letter-spacing:.06em;cursor:pointer}
+.big-btn.primary{background:#fff;border-color:#fff;color:#0F2B2B}
+.start .big-btn{border-color:var(--green);background:transparent;color:var(--green)}
+.start .big-btn.primary{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+.big-btn:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+.big-btn .shutter{transform-box:fill-box;transform-origin:center;animation:shutter 3.2s ease-in-out infinite}
+@keyframes shutter{0%,70%,100%{transform:scale(1)}78%{transform:scale(.82)}86%{transform:scale(1.06)}}
+.link-btn{position:relative;border:0;background:none;color:var(--green);font-size:13.5px;font-weight:700;text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:6px}
+.busy{color:#fff;justify-content:flex-end;padding-bottom:24px;pointer-events:none}
+.busy-pill{display:flex;align-items:center;gap:10px;padding:8px 18px 8px 12px;border-radius:4px;background:rgba(15,43,43,.88)}
+.busy p{margin:0;font-size:13.5px}
+.busy-ic{width:24px;height:24px;flex:none;overflow:visible}
+.bi-ring{fill:none;stroke:rgba(255,255,255,.28);stroke-width:1.6}
+.bi-arc{fill:none;stroke:#AAECE5;stroke-width:2.4;stroke-linecap:round;stroke-dasharray:28 72;transform-origin:12px 12px;animation:biturn 1.1s linear infinite}
+.bi-c{fill:#AAECE5;animation:biblink 1.8s ease-in-out calc(var(--i) * .3s) infinite}
+@keyframes biturn{to{transform:rotate(360deg)}}
+@keyframes biblink{0%,100%{opacity:.25}40%{opacity:1}}
+.busy-bar{position:absolute;inset:0;overflow:hidden;background:rgba(8,20,20,.3)}
+.busy-bar i{position:absolute;left:0;right:0;height:80px;background:linear-gradient(to bottom,rgba(25,163,154,0),rgba(25,163,154,.28));border-bottom:2px solid rgba(170,236,229,.95);animation:sweep 1.7s ease-in-out infinite}
+@keyframes sweep{from{top:-80px}to{top:100%}}
+.err{background:rgba(8,24,24,.88);color:#fff}
+.err p{margin:0;font-size:14.5px;line-height:1.75;max-width:30em}
+.err-art{width:64px;height:64px;overflow:visible}
+.ea-dish{fill:none;stroke:rgba(255,255,255,.7);stroke-width:2.2;animation:dndraw .5s ease-out backwards}
+.ea-in{fill:none;stroke:rgba(255,255,255,.25);stroke-width:1}
+.ea-mark{transform-box:fill-box;transform-origin:center;animation:eawob .7s ease-out .35s backwards}
+.ea-mark circle:first-child{fill:#E6A36E}
+.ea-mark path{stroke:#0F2B2B;stroke-width:2.6;stroke-linecap:round}
+.ea-mark circle+path+circle{fill:#0F2B2B}
+@keyframes eawob{0%{transform:scale(0)}45%{transform:scale(1.15) rotate(-10deg)}65%{transform:scale(1) rotate(7deg)}82%{transform:rotate(-3deg)}100%{transform:rotate(0)}}
+.done{position:absolute;inset:0;z-index:3;display:grid;place-items:center;pointer-events:none}
+.done-card{display:grid;justify-items:center;gap:4px;padding:20px 28px 16px;border-radius:6px;background:rgba(15,43,43,.9);color:#fff;text-align:center;animation:dnin .25s ease-out backwards,dnout .3s ease-in 1.5s forwards}
+.done-art{width:56px;height:56px;margin-bottom:4px}
+.dn-c{fill:none;stroke:#3CC4B9;stroke-width:3;animation:dndraw .45s ease-out .1s backwards}
+.dn-k{fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;animation:dndraw .3s ease-out .45s backwards}
+.done b{font-size:16px;font-weight:700}
+.done small{font-size:12.5px;color:#C1D3CF}
+@keyframes dndraw{from{stroke-dasharray:1;stroke-dashoffset:1}to{stroke-dasharray:1;stroke-dashoffset:0}}
+@keyframes dnin{from{opacity:0;transform:scale(.9)}}
+@keyframes dnout{to{opacity:0}}
+.is-busy .dock,.is-busy .ov-btn,.is-busy .zoom,.is-busy #newBtn{pointer-events:none;opacity:.5}
+.no-photo .count,.no-result .tally,.no-result .hint-line,.no-result .more,.no-result .dock{display:none}
+.steps{display:none;margin:0;padding:0;list-style:none;counter-reset:st;gap:0;border-top:1.5px solid var(--rule)}
+.no-photo .steps{display:grid}
+.steps li{counter-increment:st;display:flex;align-items:flex-start;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);animation:lgrise .5s cubic-bezier(.2,.9,.25,1) calc(.6s + var(--i) * .12s) backwards}
+.steps li::before{content:counter(st);flex:none;width:22px;height:22px;border-radius:50%;background:var(--green);color:var(--green-ink);font-size:12px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+.steps .ic{color:var(--green);margin-top:1px}
+.steps div{display:grid;gap:1px}
+.steps b{font-size:14.5px;font-weight:700}
+.steps span{font-size:12.5px;color:var(--muted);line-height:1.6}
+.is-focus .tally,.is-focus .hint-line,.is-focus .more{display:none}
+
+.hint-line{margin:-4px 0 0;display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:center;font-size:12px;color:var(--muted)}
+.hint-line b{color:var(--ink-2);margin-right:5px}
+
+.more{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.more summary{display:flex;align-items:center;gap:8px;cursor:pointer;padding:13px 2px;font-size:14px;color:var(--ink-2);list-style:none}
+.more summary::-webkit-details-marker{display:none}
+.more summary .ic{width:19px;height:19px;color:var(--green)}
+.more summary .chev{margin-left:auto;width:18px;height:18px;color:var(--muted);transition:transform .2s}
+.more[open] summary .chev{transform:rotate(180deg)}
+.more .body{display:grid;gap:14px;padding:2px 2px 18px}
+.row{display:grid;gap:6px}
+.row label{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.row label b{font-weight:900;font-size:15px;font-variant-numeric:tabular-nums}
+.hist{width:100%;height:48px;display:block}
+.hist .on{fill:var(--ai);opacity:.85} .hist .cand{fill:var(--ai);opacity:.28} .hist .low{fill:var(--line)}
+.hist .th{stroke:var(--ink-2);stroke-width:1.2;stroke-dasharray:3 2;vector-effect:non-scaling-stroke}
+.hist-ax{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--muted)}
+.hist-sum{margin:0;font-size:13px;color:var(--ink-2)}
+.hist-sum b{font-weight:900;font-size:14px;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--green);margin:0}
+.note{margin:0;font-size:12.5px;color:var(--muted);line-height:1.8}
+.btn-line{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border-radius:4px;border:1.5px solid var(--line);background:transparent;font-size:14px;color:var(--ink-2);cursor:pointer}
+.btn-line .ic{width:18px;height:18px;color:var(--green)}
+.btn-line:hover{background:var(--soft)}
+.btn-line[aria-pressed="true"]{border-color:var(--green);background:var(--green-soft);color:var(--green);font-weight:700}
+.btn-line .badge{position:static}
+
+.dock{position:sticky;bottom:0;z-index:5;margin-inline:-16px;padding:0 0 env(safe-area-inset-bottom, 0px);background:var(--bg);border-top:1.5px solid var(--rule)}
+.dock-main{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.35fr)}
+.db{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:66px;padding:4px 2px;border:0;border-radius:0;background:transparent;color:var(--ink-2);font-size:11.5px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+.db+.db{border-left:1px solid var(--line)}
+.db .ic{transition:transform .12s}
+.db:hover:not(:disabled){background:var(--soft)}
+.db:active:not(:disabled) .ic{transform:scale(.88)}
+.db:disabled{opacity:.32;cursor:default}
+#undo:active:not(:disabled) .ic{transform:rotate(-35deg) scale(.88)}
+#redo:active:not(:disabled) .ic{transform:rotate(35deg) scale(.88)}
+#rvBtn:not(:disabled):has(.badge:not([hidden])) .ic{transform-origin:45% 45%;animation:look 4s ease-in-out 1s infinite}
+@keyframes look{0%,62%,100%{transform:rotate(0)}70%{transform:rotate(-16deg) translateY(-1px)}80%{transform:rotate(12deg)}90%{transform:rotate(-4deg)}}
+.db[aria-pressed="true"]{color:var(--green);background:var(--green-soft);font-weight:700}
+.db.primary{border-left:0;background:var(--green);color:var(--green-ink);font-size:14px;font-weight:700;letter-spacing:.1em}
+.db.primary:hover:not(:disabled){background:var(--green);filter:brightness(1.08)}
+.db.primary:not(:disabled) .ic .ar{animation:bob 1.6s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(2.5px)}}
+.ants{stroke-dasharray:2.6 2.4}
+[aria-pressed="true"] .ants{animation:ants .9s linear infinite}
+@keyframes ants{to{stroke-dashoffset:-5}}
+.badge{position:absolute;top:6px;left:calc(50% + 7px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;font-weight:700;font-size:11px;line-height:18px;text-align:center;font-style:normal;font-variant-numeric:tabular-nums}
+.badge.n{background:var(--soft-2);color:var(--ink-2)}
+.badge.hot{background:var(--green);color:var(--green-ink)}
+.badge.hot::after{content:"";position:absolute;inset:-3px;border-radius:12px;border:1.5px solid var(--teal);animation:pulse 2.4s ease-out infinite}
+.dock-review{display:grid;gap:10px;padding:12px 16px 12px;animation:rvin .22s ease-out}
+@keyframes rvin{from{opacity:0;transform:translateY(8px)}}
+.rv-top{display:flex;align-items:center;gap:10px}
+.rv-title{display:flex;align-items:baseline;gap:10px;font-size:18px;font-weight:900;letter-spacing:.06em}
+.rv-prog{font-size:20px;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums}
+.rv-prog small{font-size:14px;color:var(--muted)}
+.rv-score{font-size:12px;color:var(--muted);margin-left:auto}
+.rv-exit{height:36px;border:1.5px solid var(--rule);background:transparent;color:var(--ink);border-radius:4px;padding:0 14px;font-size:13px;font-weight:700;cursor:pointer}
+.rv-track{height:6px;background:var(--soft-2);overflow:hidden}
+.rv-track i{display:block;height:100%;width:0;background:var(--green);transition:width .3s}
+.rv-q{margin:2px 0 0;font-size:18px;font-weight:700;line-height:1.5}
+.rv-acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.rv-acts button{min-height:60px;border-radius:4px;border:1.5px solid var(--rule);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;letter-spacing:.06em;color:var(--ink);white-space:nowrap}
+.rv-acts .rv-yes{border-color:var(--green);color:var(--green)}
+.rv-acts button:disabled{opacity:.3;cursor:default}
+.rv-yes[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+.rv-no[aria-pressed="true"]{background:var(--ink-2);border-color:var(--ink-2);color:var(--bg)}
+.rv-navs{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:2px}
+.rv-navs button{min-height:46px;padding:0;border:0;background:transparent;color:var(--green);font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer}
+.rv-navs .ic{width:18px;height:18px}
+.rv-navs button:disabled{opacity:.3;cursor:default}
+.dish-help{margin:0;font-size:12.5px;color:var(--muted);line-height:1.75}
+.dish-hint{display:flex;align-items:center;gap:12px}
+.dish-art{width:72px;height:48px;flex:none;overflow:visible}
+.da-bg{fill:var(--soft-2)}
+.da-dish{fill:var(--paper);stroke:var(--art-line);stroke-width:1.2}
+.da-ring{transform-box:fill-box;transform-origin:center;animation:daring 3.6s ease-in-out infinite}
+.da-ring circle:first-child{fill:none;stroke:var(--green);stroke-width:1.8;stroke-dasharray:4 3}
+.da-knob{fill:#fff;stroke:var(--green);stroke-width:1.6}
+@keyframes daring{0%,12%{transform:translate(-11px,-3px) scale(.78)}45%,55%{transform:translate(0,0) scale(.78)}82%,100%{transform:translate(0,0) scale(1)}}
+.dish-acts{display:grid;grid-template-columns:auto auto 1fr;gap:8px}
+.dish-acts button{min-height:50px;padding:0 14px;white-space:nowrap;border-radius:4px;border:1.5px solid var(--line);background:transparent;cursor:pointer;font-size:14px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;justify-content:center;gap:6px}
+.dish-acts .primary{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+@media (max-width:379px){.dish-acts{grid-template-columns:1fr 1fr 1.7fr}.dish-acts button{white-space:normal;padding:0 6px}}
+.dish-n{margin-left:auto}
+
+.sheet,.coach{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(8,30,29,.55);animation:fade .18s}
+.panel,.coach-card{width:100%;max-height:100%;overflow:auto;display:grid;gap:12px;padding:0 18px 18px;border-radius:6px;background:var(--bg);color:var(--ink);animation:rvin .22s ease-out}
+.panel{max-width:560px}
+.coach-card{max-width:420px;padding-top:18px}
+.panel-head{padding:14px 0 8px;border-bottom:1.5px solid var(--rule)}
+.panel h2,.coach-card h2{margin:0;font-size:19px;font-weight:900;letter-spacing:.05em;text-wrap:balance}
+.panel img{display:block;width:100%;border:1px solid var(--rule)}
+.fname{font-size:12px;font-weight:500;color:var(--muted);word-break:break-all}
+.cmt{display:grid;gap:4px}
+.cmt label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.cmt small{font-size:12px;font-weight:500}
+.cmt .pen .wr{stroke-dasharray:1;stroke-dashoffset:1;animation:write 2.4s ease-in-out infinite}
+.cmt .pen .pn{animation:penmove 2.4s ease-in-out infinite}
+@keyframes write{0%{stroke-dashoffset:1}45%,100%{stroke-dashoffset:0}}
+@keyframes penmove{0%{transform:translate(0,0)}45%,100%{transform:translate(22px,0)}}
+.cmt input{width:100%;font:inherit;font-size:17px;font-weight:700;padding:10px 2px;border:0;border-bottom:2px solid var(--green);border-radius:0;background:transparent;color:var(--ink)}
+.cmt input::placeholder{font-weight:500;color:var(--muted);opacity:.8}
+.cmt input:focus{outline:none;background:var(--green-soft)}
+.cmt-help{margin:0;font-size:11.5px;color:var(--muted)}
+.sheet.pending #outDl,.sheet.pending #outShare{opacity:.45;pointer-events:none}
+.acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.acts a,.acts button{min-height:48px;padding:0 18px;border-radius:4px;border:1.5px solid var(--green);background:transparent;font-size:14px;font-weight:700;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--green)}
+.acts .ic{width:18px;height:18px}
+.acts .primary{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+.acts .primary .ar{animation:bob 1.6s ease-in-out infinite}
+.acts button:disabled{opacity:.3;cursor:default}
+.coach-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.85;min-height:3.7em}
+.coach-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.coach-card .src{font-size:12px;color:var(--muted);text-align:center}
+.coach-card .src a{color:var(--green)}
+.dots{display:flex;gap:6px}
+.dots i{width:7px;height:7px;border-radius:4px;background:var(--line);transition:width .25s,background .25s}
+.dots i.on{width:20px;background:var(--green)}
+
+.art{display:block;width:100%;height:auto;border-radius:4px;background:var(--art-bg)}
+.art .plate{fill:#EDE6D3;stroke:#CFC7B2;stroke-width:3}
+.art .rim{fill:none;stroke:rgba(0,0,0,.07);stroke-width:2}
+.art .t{fill:#3E7F8A} .art .m{fill:#A86A98}
+.art .bx{fill:none;stroke-width:2.5}
+.art .o{stroke:#2F6FEB} .art .b{stroke:#E8702A}
+.art .fing{fill:rgba(14,107,104,.2);stroke:#0E6B68;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:fing 3.4s infinite}
+.art .rip{fill:none;stroke:#0E6B68;stroke-width:2;opacity:0;transform-box:fill-box;transform-origin:center;animation:rip 3.4s infinite}
+.art .fl{font-weight:700;font-size:15px;opacity:0;animation:fl 3.4s infinite}
+.art .bdg{transform-box:fill-box;transform-origin:center;animation:bdg 3.4s infinite}
+.art .x-box{stroke:#9AA5A0;stroke-dasharray:4 3;animation:xbox 3.4s infinite}
+.art .d-box{stroke:#E8702A;stroke-dasharray:96;animation:drawbox 3.4s infinite}
+.art .zoomg{transform-box:view-box;transform-origin:133px 82px;animation:zoom 3.4s infinite}
+.art .f1{animation:f1 3.4s infinite} .art .f2{animation:f2 3.4s infinite}
+.art .hold{fill:none;stroke:#0E6B68;stroke-width:3;stroke-dasharray:107;stroke-dashoffset:0;opacity:0;transform-box:fill-box;transform-origin:center;transform:rotate(-90deg);animation:hold 3.4s infinite}
+.art .f4{animation:f4 3.4s infinite}
+.art .lp{transform-box:fill-box;transform-origin:50% 100%;animation:lp 3.4s infinite}
+.art .l-box{stroke:#2F6FEB;animation:lbox 3.4s infinite}
+.art .fl4{animation:fl4 3.4s infinite}
+.art .ring{fill:none;stroke:#0E6B68;stroke-width:3;stroke-dasharray:7 5}
+.art .mv{animation:mv 3.4s infinite} .art .mvf{animation:mvf 3.4s infinite}
+@keyframes fing{0%{opacity:0;transform:translate(60px,60px)}12%{opacity:1}36%{transform:translate(0,0) scale(1)}41%{transform:translate(0,0) scale(.8)}47%{transform:translate(0,0) scale(1)}72%{opacity:1;transform:translate(0,0)}90%,100%{opacity:0;transform:translate(50px,50px)}}
+@keyframes rip{0%,40%{opacity:0;transform:scale(.6)}44%{opacity:.8}66%,100%{opacity:0;transform:scale(2.1)}}
+@keyframes fl{0%,45%{opacity:0;transform:translateY(6px)}52%{opacity:1}82%,100%{opacity:0;transform:translateY(-12px)}}
+@keyframes bdg{0%,44%{transform:scale(0)}52%{transform:scale(1.25)}58%,100%{transform:scale(1)}}
+@keyframes xbox{0%,42%{stroke:#2F6FEB;stroke-dasharray:none}46%,100%{stroke:#9AA5A0;stroke-dasharray:4 3}}
+@keyframes drawbox{0%,44%{stroke-dashoffset:96;opacity:1}62%,90%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes zoom{0%,22%{transform:scale(1)}55%,75%{transform:scale(1.6)}96%,100%{transform:scale(1)}}
+@keyframes f1{0%{opacity:0}10%,22%{opacity:1;transform:translate(0,0)}55%{opacity:1;transform:translate(-30px,24px)}70%,100%{opacity:0;transform:translate(-30px,24px)}}
+@keyframes f2{0%{opacity:0}10%,22%{opacity:1;transform:translate(0,0)}55%{opacity:1;transform:translate(30px,-24px)}70%,100%{opacity:0;transform:translate(30px,-24px)}}
+@keyframes hold{0%,10%{stroke-dashoffset:107;opacity:1}34%{stroke-dashoffset:0;opacity:1}40%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes f4{0%{opacity:0;transform:translate(40px,40px)}10%,70%{opacity:1;transform:translate(0,0)}84%,100%{opacity:0;transform:translate(40px,40px)}}
+@keyframes lp{0%,34%{opacity:0;transform:scale(.6)}40%,68%{opacity:1;transform:scale(1)}74%,100%{opacity:0;transform:scale(.9)}}
+@keyframes lbox{0%,60%{stroke:#2F6FEB;stroke-dasharray:none}64%,100%{stroke:#9AA5A0;stroke-dasharray:5 4}}
+@keyframes fl4{0%,68%{opacity:0;transform:translateY(6px)}74%{opacity:1}94%,100%{opacity:0;transform:translateY(-12px)}}
+@keyframes mv{0%,18%{transform:translate(-30px,-16px)}58%,100%{transform:translate(0,0)}}
+@keyframes mvf{0%{opacity:0;transform:translate(-30px,-16px)}12%,18%{opacity:1;transform:translate(-30px,-16px)}58%,72%{opacity:1;transform:translate(0,0)}88%,100%{opacity:0;transform:translate(0,0)}}
+
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom, 0px));z-index:40;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);padding:10px 18px;border-radius:4px;background:var(--ink);color:var(--bg);font-size:13px;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+
+@media (min-width:900px){
+  .app{max-width:1280px;height:100%;display:grid;grid-template-columns:minmax(0,1fr) 380px;grid-template-rows:auto auto auto auto auto 1fr;column-gap:36px;row-gap:18px;padding-block:22px}
+  .stage-wrap{grid-column:1;grid-row:1 / -1;align-items:center}
+  .stage{width:min(100%, calc(100vh - 44px))}
+  @supports (height:100dvh){ .stage{width:min(100%, calc(100dvh - 44px))} }
+  .top{grid-column:2;grid-row:1} .count,.steps{grid-column:2;grid-row:2}
+  .dock{grid-column:2;grid-row:3;position:static;margin:0;padding:0;border-top:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule)}
+  .hint-line{grid-column:2;grid-row:4;justify-content:flex-start;margin:0}
+  .more{grid-column:2;grid-row:5;align-self:start}
+  .toast{bottom:28px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .start-art .dr{stroke-dashoffset:0} .start-art .pp{opacity:1}
+}
+</style>
+</head>
+<body class="no-photo no-result">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.6-2.2h5.4L16.3 7h2.2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m20.5 16-5-5-8.5 8.5"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5"/><path d="m7.5 8 4.5-4.5L16.5 8"/><path d="M6 11.5H5a1 1 0 0 0-1 1V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6.5a1 1 0 0 0-1-1h-1"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+  <symbol id="i-review" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.6-4.6"/><path d="m7.8 10.6 1.9 1.9 3.3-3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></symbol>
+  <symbol id="i-dish" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke-dasharray="3.2 2.6"/><path d="M12 8.5v7M8.5 12h7"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5 15a8 8 0 1 0 1.8-8.3L4 10"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="top-row">
+      <img class="logo" src="img/ryokusui_logo.png" alt="緑水工業株式会社" width="178" height="20">
+      <div class="top-r">
+        <button type="button" class="tbtn wide" id="newBtn" hidden><svg class="ic"><use href="#i-camera"/></svg>新しい写真</button>
+        <button type="button" class="tbtn" id="helpBtn" aria-label="使い方"><svg class="ic"><use href="#i-help"/></svg><span class="tl">使い方</span></button>
+      </div>
+    </div>
+    <div class="title-row">
+      <h1 class="brand"><span class="sr">大腸菌数（Webカウンター）</span>
+  <svg class="logo-svg" viewBox="0 0 165 48" width="165" height="48" aria-hidden="true" focusable="false">
+    <defs><clipPath id="lg-clip"><circle cx="24" cy="24" r="16"/></clipPath></defs>
+    <g class="lg-mark">
+      <circle class="lg-plate" cx="24" cy="24" r="21"/>
+      <circle class="lg-rim" pathLength="1" cx="24" cy="24" r="21"/>
+      <circle class="lg-in" cx="24" cy="24" r="16"/>
+      <g clip-path="url(#lg-clip)"><rect class="lg-scan" x="6" y="7" width="36" height="1.6" rx=".8"/></g>
+      <circle class="lg-c" style="--i:0" cx="16.5" cy="19" r="2.7"/>
+      <circle class="lg-c" style="--i:1" cx="28" cy="31" r="2.3"/>
+      <circle class="lg-c lg-m" style="--i:2" cx="18.5" cy="31" r="1.5"/>
+      <circle class="lg-c lg-m" style="--i:3" cx="33.5" cy="23.5" r="1.3"/>
+      <circle class="lg-c lg-b" style="--i:4" cx="29" cy="16.5" r="2.6"/>
+      <rect class="lg-box" pathLength="1" x="24.6" y="12.1" width="8.8" height="8.8"/>
+    </g>
+    <g class="lg-kick">
+      <path class="lg-g" style="--i:0" d="M63.48 17.41Q63.33 17.41 63.3 17.29L60.25 8.84Q60.24 8.82 60.24 8.78Q60.24 8.66 60.38 8.66H61.89Q62.02 8.66 62.06 8.79L63.98 14.69L65.92 8.79Q65.95 8.66 66.08 8.66H67.16Q67.29 8.66 67.33 8.79L69.27 14.7L71.2 8.79Q71.23 8.66 71.36 8.66H72.84Q72.92 8.66 72.96 8.71Q73 8.76 72.97 8.84L69.92 17.29Q69.89 17.41 69.75 17.41H68.65Q68.51 17.41 68.48 17.27L66.61 11.58L64.74 17.27Q64.71 17.41 64.58 17.41Z"/>
+      <path class="lg-g" style="--i:1" d="M79 17.53Q78.03 17.53 77.32 17.12Q76.62 16.7 76.25 15.98Q75.87 15.26 75.87 14.33Q75.87 13.38 76.25 12.66Q76.62 11.94 77.32 11.53Q78.03 11.12 79 11.12Q79.94 11.12 80.61 11.55Q81.27 12 81.61 12.79Q81.94 13.58 81.91 14.65Q81.89 14.8 81.75 14.8H77.52Q77.63 15.44 78.01 15.8Q78.39 16.15 79.01 16.15Q79.93 16.15 80.36 15.45Q80.44 15.35 80.57 15.38L81.63 15.75Q81.78 15.81 81.71 15.96Q81.31 16.76 80.58 17.14Q79.85 17.53 79 17.53ZM80.26 13.64Q80.15 13.1 79.82 12.79Q79.48 12.49 78.99 12.49Q78.45 12.49 78.07 12.79Q77.69 13.1 77.55 13.64Z"/>
+      <path class="lg-g" style="--i:2" d="M88.75 17.53Q88.12 17.53 87.59 17.27Q87.07 17.01 86.74 16.56L86.71 17.25Q86.71 17.41 86.54 17.41H85.42Q85.27 17.41 85.27 17.25V8.63Q85.27 8.47 85.42 8.47H86.65Q86.81 8.47 86.81 8.63V11.98Q87.16 11.57 87.65 11.34Q88.15 11.12 88.75 11.12Q89.63 11.12 90.28 11.52Q90.93 11.93 91.28 12.65Q91.64 13.37 91.64 14.33Q91.64 15.27 91.28 15.99Q90.93 16.71 90.28 17.12Q89.63 17.53 88.75 17.53ZM86.71 14.33Q86.71 15.12 87.17 15.62Q87.63 16.12 88.37 16.12Q89.12 16.12 89.58 15.62Q90.04 15.12 90.04 14.33Q90.04 13.52 89.58 13.02Q89.12 12.52 88.37 12.52Q87.63 12.52 87.17 13.02Q86.71 13.52 86.71 14.33Z"/>
+      <path class="lg-g" style="--i:3" d="M103.69 14.89Q103.49 16.12 102.77 16.69Q102.04 17.26 100.71 17.26Q100.26 17.26 99.74 17.2Q99.6 17.18 99.59 17.05L99.36 15.88Q99.35 15.86 99.35 15.83Q99.35 15.69 99.51 15.72Q99.83 15.77 100.1 15.79Q100.37 15.81 100.59 15.81Q101.35 15.81 101.71 15.52Q102.08 15.23 102.22 14.54Q102.32 14.12 102.35 13.58Q102.38 13.04 102.38 12.5Q102.38 11.85 102.35 11.36H100.01Q99.82 12.69 99.4 13.8Q98.98 14.92 98.25 15.8Q97.51 16.68 96.38 17.32Q96.33 17.35 96.28 17.35Q96.23 17.35 96.16 17.3L95.21 16.36Q95.16 16.31 95.16 16.25Q95.16 16.2 95.24 16.14Q96.77 15.46 97.53 14.25Q98.28 13.04 98.52 11.36H95.85Q95.7 11.36 95.7 11.2V10.1Q95.7 9.95 95.85 9.95H98.67Q98.7 9.36 98.7 8.71L98.69 8.32Q98.69 8.17 98.84 8.17L100.04 8.18Q100.19 8.18 100.19 8.33Q100.19 8.75 100.18 9.16Q100.17 9.56 100.15 9.95H103.71Q103.87 9.95 103.87 10.1L103.88 11.65Q103.88 12.5 103.85 13.36Q103.81 14.22 103.69 14.89Z"/>
+      <path class="lg-g" style="--i:4" d="M110.2 16.21Q110.17 16.15 110.17 16.12Q110.17 16.02 110.3 16.02Q112.99 15.8 114.24 14.56Q115.5 13.32 115.52 11.2H110.62V13.41Q110.62 13.57 110.47 13.57L109.27 13.58Q109.12 13.58 109.12 13.43V9.98Q109.12 9.83 109.27 9.83H112.23V8.28Q112.23 8.12 112.38 8.12H113.68Q113.83 8.12 113.83 8.28V9.83H116.99Q117.15 9.83 117.15 9.98V10.33Q117.15 12.42 116.51 13.93Q115.88 15.43 114.54 16.32Q113.21 17.21 111.08 17.46H111.05Q110.94 17.46 110.9 17.37Z"/>
+      <path class="lg-g" style="--i:5" d="M121.95 10.04Q121.95 9.98 121.99 9.94L122.74 8.94Q122.83 8.84 122.94 8.88Q123.65 9.15 124.44 9.61Q125.23 10.08 125.85 10.64Q125.91 10.69 125.91 10.75Q125.91 10.81 125.86 10.86L124.98 11.9Q124.91 11.96 124.86 11.96Q124.81 11.96 124.76 11.91Q124.19 11.38 123.45 10.9Q122.71 10.41 122.05 10.15Q121.95 10.11 121.95 10.04ZM122.84 17.21Q122.73 17.21 122.7 17.09L122.29 15.78Q122.29 15.67 122.43 15.66Q124.33 15.42 125.66 14.67Q127 13.92 127.89 12.7Q128.78 11.49 129.33 9.83Q129.37 9.73 129.44 9.73Q129.49 9.73 129.53 9.75L130.64 10.42Q130.76 10.51 130.72 10.61Q130.14 12.36 129.1 13.73Q128.07 15.11 126.53 16Q125 16.9 122.89 17.21Z"/>
+      <path class="lg-g" style="--i:6" d="M136.72 17.51Q136.7 17.52 136.66 17.52Q136.58 17.52 136.52 17.44L135.64 16.27Q135.6 16.22 135.6 16.18Q135.6 16.1 135.72 16.08Q137.03 15.86 138.12 15.29Q139.21 14.73 140.03 13.9Q139.37 13.5 138.61 13.13Q137.85 12.75 137.06 12.41Q136.99 12.48 136.83 12.63Q136.67 12.78 136.47 12.95Q136.26 13.12 136.09 13.24Q135.92 13.36 135.84 13.36Q135.8 13.36 135.72 13.3L134.88 12.48Q134.82 12.42 134.82 12.38Q134.82 12.31 134.91 12.26Q135.65 11.84 136.21 11.22Q136.78 10.6 137.18 9.93Q137.57 9.27 137.77 8.72Q137.82 8.59 137.95 8.59L143.53 8.57Q143.7 8.57 143.68 8.74Q143.5 10.98 142.65 12.75Q141.8 14.53 140.31 15.73Q138.83 16.95 136.72 17.51ZM137.94 11.38Q138.71 11.66 139.48 12.02Q140.25 12.38 140.92 12.77Q141.72 11.51 141.97 9.93H138.76Q138.62 10.28 138.4 10.65Q138.19 11.02 137.94 11.38Z"/>
+      <path class="lg-g" style="--i:7" d="M148.4 13.58Q148.26 13.58 148.26 13.45V12.19Q148.26 12.06 148.4 12.06H156.78Q156.91 12.06 156.91 12.19V13.46Q156.91 13.59 156.78 13.59Z"/>
+    </g>
+    <g class="lg-title">
+      <path class="lg-g" style="--i:8" d="M82.59 27.8Q83 27.8 83 28.21V32.11Q83 32.52 82.59 32.52H74.58Q75.7 35.88 78.18 38.28Q80.65 40.67 83.81 42.08Q84.17 42.26 83.99 42.64L81.49 46.46Q81.26 46.8 80.93 46.64Q78.15 45.29 75.78 43.07Q73.41 40.85 71.8 37.92Q70.27 40.73 67.94 43.01Q65.6 45.29 62.77 46.64Q62.44 46.8 62.24 46.49L59.54 42.66Q59.43 42.51 59.43 42.41Q59.43 42.23 59.69 42.1Q63.34 40.7 65.64 38.29Q67.95 35.88 68.79 32.52H60.91Q60.5 32.52 60.5 32.11V28.21Q60.5 27.8 60.91 27.8H69.23V23.21Q69.23 22.8 69.63 22.8H73.79Q74.2 22.8 74.2 23.21V27.8Z"/>
+      <path class="lg-g" style="--i:9" d="M89.32 46.36Q89.17 46.77 88.78 46.57L85.8 44.88Q85.47 44.7 85.62 44.35Q86.16 43.05 86.44 41.36Q86.72 39.68 86.82 37.77Q86.92 35.86 86.92 33.89V23.77Q86.92 23.36 87.33 23.36H94.93Q95.34 23.36 95.34 23.77V37.54Q97 36.93 97.86 35.98H96.2Q95.8 35.98 95.8 35.58V33.23Q95.8 32.82 96.2 32.82H109.85Q110.25 32.82 110.25 33.23V35.58Q110.25 35.98 109.85 35.98H101.59L101.08 36.75H109.34Q109.75 36.75 109.75 37.16Q109.75 38.35 109.75 39.5Q109.75 40.65 109.69 41.87Q109.59 43.96 109.07 45.05Q108.55 46.13 107.42 46.48Q106.3 46.82 104.36 46.74Q104.03 46.74 103.91 46.39L103.22 44.17Q101.84 45.83 100.16 46.72Q99.85 46.9 99.6 46.64L97.79 44.86Q97.66 44.73 97.66 44.6Q97.66 44.4 97.91 44.3Q99.57 43.61 100.76 42.45Q101.94 41.29 102.58 39.88H101.87Q101.08 41.26 99.81 42.35Q98.55 43.43 97.05 44.04Q96.71 44.19 96.48 43.86L95.34 42.2V42.84Q95.34 43.86 94.99 44.68Q94.65 45.49 93.78 45.95Q92.92 46.41 91.33 46.41Q91.16 46.41 90.96 46.37Q90.77 46.34 90.72 46.08L90.01 43.38Q89.88 44.24 89.7 45Q89.52 45.75 89.32 46.36ZM96.84 32.06Q96.43 32.06 96.43 31.65V23.77Q96.43 23.36 96.84 23.36H108.83Q109.23 23.36 109.23 23.77V31.65Q109.23 32.06 108.83 32.06ZM105 26.91V25.96H100.69V26.91ZM90.54 27.34V29.66H91.74V27.34ZM100.69 28.64V29.61H105V28.64ZM90.54 33.05V35.58H91.74V33.05ZM90.42 38.94Q90.39 39.81 90.33 40.62Q90.26 41.44 90.16 42.18Q91.18 42.18 91.46 41.94Q91.74 41.7 91.74 41.19V38.94ZM96.66 40.52Q96.31 40.67 96.1 40.37L95.34 39.2V41.54H95.36L95.41 41.52Q96.48 41.31 97.3 40.87Q98.12 40.42 98.65 39.88H97.71Q97.45 40.06 97.2 40.23Q96.94 40.39 96.66 40.52ZM105.64 39.88Q105.13 41.47 104.16 42.92Q105.23 42.94 105.55 42.66Q105.87 42.38 105.92 41.67Q105.97 41.24 105.97 40.76Q105.97 40.29 105.97 39.88Z"/>
+      <path class="lg-g" style="--i:10" d="M130.6 22.8Q131.01 22.8 131.01 23.21V24H135.86Q136.26 24 136.26 24.41V27.26Q136.26 27.67 135.86 27.67H131.01V28.61H134.91Q135.32 28.61 135.32 29.02V45.98Q135.32 46.39 134.91 46.39H113.65Q113.24 46.39 113.24 45.98V29.02Q113.24 28.61 113.65 28.61H117.52V27.67H112.7Q112.3 27.67 112.3 27.26V24.41Q112.3 24 112.7 24H117.52V23.21Q117.52 22.8 117.93 22.8H121.65Q122.06 22.8 122.06 23.21V24H126.47V23.21Q126.47 22.8 126.88 22.8ZM122.06 27.67V28.61H126.47V27.67ZM122.27 42.82 122.37 40.67Q121.04 41.82 119.28 42.54Q118.9 42.66 118.75 42.31L117.75 40.22Q117.57 39.78 118.06 39.68Q119.74 39.32 121.07 38.46L118.47 38.48Q118.06 38.48 118.06 38.07V36.34Q118.06 35.93 118.47 35.93H122.21V35.19L119.15 35.14Q118.8 35.14 118.7 34.81L118.21 33.18V33.15L118.19 33.1Q118.19 32.72 118.77 32.72Q121.6 32.74 124.28 32.66Q126.96 32.57 128.82 32.26Q129.15 32.23 129.3 32.52L130.22 34.25Q130.32 34.43 130.25 34.58Q130.17 34.73 129.97 34.76Q129.07 34.86 128.16 34.95Q127.24 35.04 126.27 35.09V35.93H130.04Q130.45 35.93 130.45 36.34V38.07Q130.45 38.48 130.04 38.48L127.44 38.46Q128.13 38.89 128.92 39.2Q129.71 39.5 130.53 39.71Q130.99 39.78 130.78 40.22L129.79 42.31Q129.63 42.66 129.25 42.54Q128.46 42.23 127.65 41.76Q126.83 41.29 126.12 40.7L126.22 42.82H131.06V31.98H117.5V42.82Z"/>
+      <path class="lg-g" style="--i:11" d="M153.55 23.23Q153.63 22.83 154.01 22.88L157.63 23.31Q158.07 23.36 157.99 23.77Q157.89 24.25 157.72 24.85Q157.56 25.45 157.35 26.11H162.07Q162.48 26.11 162.48 26.52V30.02Q162.48 30.42 162.07 30.42H161.64Q161.56 31.67 161.34 33.22Q161.13 34.76 160.69 36.39Q160.26 38.02 159.47 39.53Q160.21 40.55 161.03 41.21Q161.84 41.87 162.76 42.41Q163.12 42.61 162.91 42.97L160.9 46.39Q160.77 46.59 160.59 46.59Q160.46 46.59 160.34 46.51Q159.42 45.9 158.54 45.07Q157.66 44.24 156.87 43.15Q155.87 44.3 154.77 45.12Q153.66 45.95 152.46 46.57Q152.1 46.77 151.9 46.39L150.77 44.4L149.73 45.9Q149.63 46.08 149.42 46.08Q149.32 46.08 149.17 46Q148.66 45.67 148.05 45.34Q147.43 45.01 146.85 44.7Q145.39 45.62 143.62 46.07Q141.85 46.51 140.12 46.72Q139.78 46.74 139.63 46.44L138.33 43.3Q138.13 42.84 138.64 42.84Q139.68 42.82 140.71 42.74Q141.75 42.66 142.64 42.49Q141.39 41.92 139.84 41.41Q139.55 41.34 139.55 41.11Q139.55 40.96 139.63 40.85Q139.84 40.5 140.05 40.08Q140.27 39.66 140.47 39.25H139.02Q138.61 39.25 138.61 38.84V35.98Q138.61 35.58 139.02 35.58H141.95L142.21 34.73Q142.31 34.4 142.69 34.43L143.28 34.5V34.45L143.35 32.31Q142.72 33.13 141.91 33.83Q141.11 34.53 140.24 35.06Q139.89 35.27 139.68 34.91L138.28 32.36Q138.08 31.98 138.48 31.83Q140.32 31.19 141.65 30.02L139.2 30.07Q138.79 30.07 138.79 29.66V27.31Q138.79 26.91 139.2 26.91H140.04Q139.89 26.34 139.62 25.77Q139.35 25.2 139.04 24.69Q138.97 24.56 138.97 24.43Q138.97 24.25 139.2 24.15L141.21 23.31Q141.54 23.16 141.75 23.49Q142.1 24.02 142.37 24.64Q142.64 25.25 142.82 25.83Q142.95 26.19 142.56 26.34L141.21 26.91H143.23L143.25 23.23Q143.25 22.83 143.66 22.83H147.08Q147.49 22.83 147.49 23.23V26.91H149.42L148.12 26.45Q147.71 26.29 147.92 25.91Q148.2 25.4 148.42 24.8Q148.63 24.2 148.76 23.59Q148.84 23.21 149.24 23.28L151.41 23.79Q151.79 23.87 151.72 24.28Q151.57 24.94 151.31 25.63Q151.06 26.32 150.77 26.91H151.13Q151.54 26.91 151.54 27.31V29.66Q151.54 30.07 151.13 30.07L148.71 30.02Q149.22 30.42 149.82 30.76Q150.42 31.09 150.98 31.34Q152.74 28.03 153.55 23.23ZM155.85 30.45Q155.98 31.85 156.24 33.19Q156.51 34.53 156.89 35.73Q157.33 34.55 157.51 33.11Q157.69 31.67 157.74 30.42H155.85ZM151.85 35.58Q151.95 35.58 152 35.6L150.72 33.53L150.24 34.43Q150.14 34.66 149.93 34.66Q149.78 34.66 149.68 34.55Q149.14 34.12 148.52 33.59Q147.89 33.05 147.38 32.44L147.46 34.45Q147.46 34.86 147.08 34.86H146.18Q146.39 34.99 146.31 35.29L146.24 35.58ZM152.25 38.84Q152.25 39.25 151.85 39.25H150.93Q150.44 40.62 149.73 41.8L150.62 42.18Q151.67 41.7 152.67 41.01Q153.68 40.32 154.47 39.4Q154.06 38.51 153.76 37.54Q153.45 36.57 153.2 35.63L152.87 36.11Q152.76 36.29 152.59 36.29Q152.41 36.29 152.3 36.09L152.25 36.01ZM144.73 39.12Q144.48 39.73 144.2 40.09L146.18 40.73Q146.47 40.42 146.72 40.01Q146.98 39.6 147.18 39.12Z"/>
+    </g>
+  </svg>
+      </h1>
+      <span class="when num" id="when"></span>
+    </div>
+    <svg class="wave" aria-hidden="true">
+      <g class="w1"><path d="M0 7 q15 -6 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0" fill="none" stroke="var(--green)" stroke-width="1.6"/></g>
+      <g class="w2"><path d="M0 9 q15 -4 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0" fill="none" stroke="var(--teal)" stroke-width="1" opacity=".55"/></g>
+    </svg>
+  </header>
+
+  <section class="count" aria-label="数えた結果">
+    <div class="count-main">
+      <div>
+        <div class="label">青いコロニー</div>
+        <div class="val"><span class="odo" id="odo" aria-hidden="true"></span><span class="unit">個</span><span class="delta-host" id="deltaHost"></span></div>
+        <span class="sr" id="totalSr" aria-live="polite"></span>
+      </div>
+      <div class="state-col">
+        <span class="state" id="edited" hidden><i class="dot" aria-hidden="true"></i><span id="editedT">AIの結果のまま</span></span>
+      </div>
+    </div>
+    <p class="tally"><span>AI検出 <b class="t-ai" id="nAi">0</b></span><span>除外 <b id="nOff">−0</b></span><span>追加 <b class="t-add" id="nAdd">＋0</b></span><span>確信度 <b id="confCell">0.40</b> 以上</span></p>
+  </section>
+
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <canvas id="cv" role="img" aria-label="シャーレの写真と検出枠。枠をタップすると除外、枠のないコロニーをタップするとオレンジの枠で追加します。"></canvas>
+      <button type="button" class="ov-btn glass" id="dishBtn" title="シャーレの円の位置と大きさを直す"><svg class="ic"><use href="#i-dish"/></svg>範囲を直す</button>
+      <div class="zoom glass" id="zoomBar">
+        <button type="button" id="zout" aria-label="縮小"><svg class="ic"><use href="#i-minus"/></svg></button>
+        <span class="lv" id="zlv">×1</span>
+        <button type="button" id="zin" aria-label="拡大"><svg class="ic"><use href="#i-plus"/></svg></button>
+        <button type="button" id="zfit" aria-label="全体を表示"><svg class="ic"><use href="#i-fit"/></svg></button>
+      </div>
+      <canvas id="mini" aria-label="全体図。押すとその場所へ移動します" hidden></canvas>
+      <div class="tip" id="tip" hidden></div>
+      <div class="loupe" id="loupeWrap" hidden><canvas id="loupe"></canvas><span id="loupeLabel"></span></div>
+      <div class="start" id="start">
+        <svg class="start-art" viewBox="0 0 170 170" aria-hidden="true">
+          <defs><clipPath id="sa-clip"><circle cx="85" cy="85" r="68"/></clipPath></defs>
+          <circle class="sa-plate" cx="85" cy="85" r="68"/>
+          <circle class="sa-rim dr" pathLength="1" cx="85" cy="85" r="76"/>
+          <circle class="sa-t pp" style="animation-delay:.7s" cx="60" cy="64" r="5"/>
+          <circle class="sa-t pp" style="animation-delay:.85s" cx="104" cy="54" r="4"/>
+          <circle class="sa-t pp" style="animation-delay:1s" cx="116" cy="100" r="6"/>
+          <circle class="sa-t pp" style="animation-delay:1.15s" cx="72" cy="110" r="4"/>
+          <circle class="sa-m pp" style="animation-delay:.9s" cx="90" cy="84" r="2.8"/>
+          <circle class="sa-m pp" style="animation-delay:1.05s" cx="50" cy="92" r="2.8"/>
+          <circle class="sa-m pp" style="animation-delay:1.2s" cx="98" cy="122" r="2.4"/>
+          <rect class="sa-bx dr" pathLength="1" style="animation-delay:1.5s" x="52" y="56" width="16" height="16"/>
+          <rect class="sa-bx dr" pathLength="1" style="animation-delay:1.65s" x="97" y="47" width="14" height="14"/>
+          <rect class="sa-bx dr" pathLength="1" style="animation-delay:1.8s" x="107" y="91" width="18" height="18"/>
+          <rect class="sa-bx dr" pathLength="1" style="animation-delay:1.95s" x="65" y="103" width="14" height="14"/>
+          <g clip-path="url(#sa-clip)"><g class="sc"><rect x="10" y="0" width="150" height="2" fill="#19A39A"/><rect x="10" y="-12" width="150" height="12" fill="#19A39A" opacity=".14"/></g></g>
+        </svg>
+        <p class="start-t">シャーレの写真から大腸菌を数えます</p>
+        <p class="start-s">真上からシャーレ全体を撮影</p>
+        <div class="start-acts">
+          <label class="big-btn primary" for="camIn"><svg class="ic"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.6-2.2h5.4L16.3 7h2.2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle class="shutter" cx="12" cy="12.8" r="3.4"/></svg>写真を撮る</label>
+          <label class="big-btn" for="fileIn"><svg class="ic"><use href="#i-image"/></svg>写真を選ぶ</label>
+        </div>
+        <button type="button" class="link-btn" id="sampleBtn">サンプルの写真で試す</button>
+        <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+        <input type="file" id="fileIn" accept="image/*" hidden>
+      </div>
+      <div class="busy" id="busy" hidden>
+        <div class="busy-bar"><i></i></div>
+        <div class="busy-pill">
+          <svg class="busy-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="bi-ring" cx="12" cy="12" r="9.5"/><circle class="bi-arc" pathLength="100" cx="12" cy="12" r="9.5"/><circle class="bi-c" style="--i:0" cx="9" cy="10" r="1.6"/><circle class="bi-c" style="--i:1" cx="15" cy="9.5" r="1.3"/><circle class="bi-c" style="--i:2" cx="13.5" cy="15" r="1.7"/></svg>
+          <p id="busyText">シャーレを探しています…</p>
+        </div>
+      </div>
+      <div class="done" id="done" role="status" hidden>
+        <div class="done-card">
+          <svg class="done-art" viewBox="0 0 56 56" aria-hidden="true"><circle class="dn-c" pathLength="1" cx="28" cy="28" r="24"/><path class="dn-k" pathLength="1" d="M17 29l7.5 7.5L40 21"/></svg>
+          <b id="doneT"></b><small id="doneS"></small>
+        </div>
+      </div>
+      <div class="err" id="err" hidden>
+        <svg class="err-art" viewBox="0 0 64 64" aria-hidden="true"><circle class="ea-dish" pathLength="1" cx="28" cy="34" r="22"/><circle class="ea-in" cx="28" cy="34" r="16"/><g class="ea-mark"><circle cx="47" cy="17" r="11"/><path d="M47 11.5v7"/><circle cx="47" cy="22.6" r="1.4"/></g></svg>
+        <p id="errText"></p>
+        <div class="start-acts"><button type="button" class="big-btn primary" id="retryBtn">もう一度</button><button type="button" class="big-btn" id="errBack">写真を選び直す</button></div>
+      </div>
+    </div>
+  </div>
+
+  <ol class="steps" aria-label="使い方">
+    <li style="--i:0"><svg class="ic"><use href="#i-camera"/></svg><div><b>撮る</b><span>シャーレを真上から、全体が入るように撮影</span></div></li>
+    <li style="--i:1"><svg class="ic"><use href="#i-review"/></svg><div><b>確かめる</b><span>AIが青いコロニーを枠で囲みます。迷った枠は「見直し」で1件ずつ確認</span></div></li>
+    <li style="--i:2"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="m7.5 10 4.5 4.5 4.5-4.5"/><path d="M5 20h14"/></svg><div><b>保存</b><span>件数と枠を書き込んだ画像を保存</span></div></li>
+  </ol>
+
+  <p class="hint-line" id="hintLine"></p>
+
+  <details class="more">
+    <summary><svg class="ic"><use href="#i-sliders"/></svg>詳細設定<svg class="ic chev"><use href="#i-down"/></svg></summary>
+    <div class="body">
+      <div class="row">
+        <label for="conf">確信度のしきい値<b id="confV">0.40</b></label>
+        <svg class="hist" id="hist" viewBox="0 0 190 46" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="hist-ax"><span>低い</span><span>確信度</span><span>高い</span></div>
+        <input type="range" id="conf" min="0.05" max="0.70" step="0.05" value="0.40">
+        <p class="hist-sum" id="histSum"></p>
+        <p class="note">確信度が線より右の枠を数えます。下げると淡いコロニーも数え、上げると確信度の高い枠だけを数えます。</p>
+      </div>
+      <button type="button" class="btn-line" id="candBtn" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect class="ants" x="4" y="4" width="16" height="16" rx="1.5"/><circle cx="12" cy="12" r="2.2"/></svg>候補の枠を点線で表示<i class="badge n" id="candN">0</i></button>
+      <button type="button" class="btn-line" id="reset"><svg class="ic"><use href="#i-reset"/></svg>AIの結果に戻す</button>
+      <p class="note">検出結果は自動処理によるもので、正確さを保証するものではありません。</p>
+    </div>
+  </details>
+
+  <nav class="dock" aria-label="操作">
+    <div class="dock-main" id="dockMain">
+      <button type="button" class="db" id="undo" title="元に戻す（Ctrl+Z）" disabled><svg class="ic"><use href="#i-undo"/></svg><span>元に戻す</span></button>
+      <button type="button" class="db" id="redo" title="やり直し（Ctrl+Y）" disabled><svg class="ic"><use href="#i-redo"/></svg><span>やり直し</span></button>
+      <button type="button" class="db" id="rvBtn" title="迷いやすい枠を1つずつ確認"><svg class="ic"><use href="#i-review"/></svg><span>見直し</span><i class="badge hot" id="rvBadge">0</i></button>
+      <button type="button" class="db primary" id="save"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><g class="ar"><path d="M12 3.5v11"/><path d="m7.5 10 4.5 4.5 4.5-4.5"/></g><path d="M5 20h14"/></svg><span>保存</span></button>
+    </div>
+    <div class="dock-review" id="dockReview" hidden>
+      <div class="rv-top">
+        <div class="rv-title"><span>見直し</span><span class="rv-prog"><span id="rvI">1</span><small>／<span id="rvN">1</span></small></span></div>
+        <span class="rv-score" id="rvScore"></span>
+        <button type="button" class="rv-exit" id="rvExit">終わる</button>
+      </div>
+      <div class="rv-track"><i id="rvFill"></i></div>
+      <p class="rv-q">この枠は、大腸菌のコロニーですか？</p>
+      <div class="rv-acts">
+        <button type="button" class="rv-no" id="rvNo" aria-pressed="false"><svg class="ic"><use href="#i-x"/></svg>数えない</button>
+        <button type="button" class="rv-yes" id="rvYes" aria-pressed="false"><svg class="ic"><use href="#i-check"/></svg>数える</button>
+      </div>
+      <div class="rv-navs">
+        <button type="button" id="rvPrev"><svg class="ic"><use href="#i-left"/></svg>前の枠へ</button>
+        <button type="button" id="rvNext">次の枠へ<svg class="ic"><use href="#i-right"/></svg></button>
+      </div>
+    </div>
+    <div class="dock-review" id="dockDish" hidden>
+      <div class="rv-top"><b class="rv-title">シャーレの範囲</b><span class="dish-n rv-score" id="dishN"></span></div>
+      <div class="dish-hint">
+        <svg class="dish-art" viewBox="0 0 72 48" aria-hidden="true"><rect class="da-bg" x="1" y="1" width="70" height="46" rx="4"/><circle class="da-dish" cx="40" cy="24" r="16"/><g class="da-ring"><circle cx="40" cy="24" r="16"/><circle class="da-knob" cx="51.3" cy="35.3" r="3.6"/></g></svg>
+        <p class="dish-help" id="dishHelp"></p>
+      </div>
+      <div class="dish-acts">
+        <button type="button" id="dishAuto">自動に戻す</button>
+        <button type="button" id="dishCancel">やめる</button>
+        <button type="button" class="primary" id="dishOk"><svg class="ic"><use href="#i-check"/></svg>この範囲で数える</button>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT" hidden>
+  <div class="panel">
+    <div class="panel-head"><h2 id="sheetT">保存する記録</h2></div>
+    <img id="outImg" alt="枠と件数を書き込んだ結果画像">
+    <div class="cmt">
+      <label for="outCmt"><svg class="pen" width="40" height="18" viewBox="0 0 40 18" aria-hidden="true" fill="none"><path class="wr" pathLength="1" d="M2 13 q3 -5 6 0 t6 0 t6 0 t6 0" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round"/><g class="pn"><path d="M6 12l7-9 3 2-7 9-3.5 1z" fill="var(--green)"/></g></svg>備考（採水場所・希釈倍率など）<small>任意</small></label>
+      <input type="text" id="outCmt" maxlength="60" placeholder="例：〇〇処理場 放流水 10倍" autocomplete="off" enterkeyhint="done">
+      <p class="cmt-help">入力した備考は、画像のいちばん上に書き込まれます。</p>
+    </div>
+    <div class="fname" id="outName"></div>
+    <p class="note" id="outNote"></p>
+    <div class="acts">
+      <button type="button" id="sheetClose">閉じる</button>
+      <button type="button" id="outShare" hidden><svg class="ic"><use href="#i-share"/></svg>共有</button>
+      <a id="outDl" class="primary" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><g class="ar"><path d="M12 3.5v11"/><path d="m7.5 10 4.5 4.5 4.5-4.5"/></g><path d="M5 20h14"/></svg>保存する</a>
+    </div>
+  </div>
+</div>
+
+<div class="coach" id="coach" role="dialog" aria-modal="true" aria-labelledby="coachT" hidden>
+  <div class="coach-card">
+    <svg class="art" viewBox="0 0 260 170" aria-hidden="true">
+      <circle class="plate" cx="130" cy="85" r="76"/><circle class="rim" cx="130" cy="85" r="68"/>
+      <circle class="t" cx="96" cy="60" r="4.5"/><circle class="m" cx="110" cy="112" r="3.5"/><circle class="m" cx="84" cy="94" r="3"/><circle class="t" cx="148" cy="118" r="4"/><circle class="m" cx="178" cy="98" r="3"/><circle class="m" cx="122" cy="80" r="2.5"/>
+      <rect class="bx o" x="88" y="52" width="16" height="16"/><rect class="bx o" x="140" y="110" width="16" height="16"/>
+      <circle class="m" cx="160" cy="66" r="6.5"/>
+      <rect class="bx x-box" x="148" y="54" width="24" height="24"/>
+      <g class="bdg"><circle cx="172" cy="54" r="6" fill="#9AA5A0"/><path d="M169.6 51.6l4.8 4.8M174.4 51.6l-4.8 4.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>
+      <text class="fl" x="184" y="46" fill="#587270">−1</text>
+      <circle class="rip" cx="160" cy="66" r="12"/><circle class="fing" cx="160" cy="66" r="13"/>
+    </svg>
+    <svg class="art" viewBox="0 0 260 170" aria-hidden="true" hidden>
+      <circle class="plate" cx="130" cy="85" r="76"/><circle class="rim" cx="130" cy="85" r="68"/>
+      <circle class="m" cx="150" cy="54" r="3.5"/><circle class="t" cx="166" cy="92" r="4.5"/><circle class="m" cx="120" cy="70" r="3"/><circle class="m" cx="140" cy="124" r="3"/><circle class="t" cx="84" cy="80" r="4"/>
+      <rect class="bx o" x="158" y="84" width="16" height="16"/><rect class="bx o" x="76" y="72" width="16" height="16"/>
+      <circle class="t" cx="104" cy="104" r="6"/>
+      <rect class="bx d-box" x="92" y="92" width="24" height="24"/>
+      <g class="bdg"><circle cx="116" cy="92" r="6" fill="#E8702A"/><path d="M113 92h6M116 89v6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>
+      <text class="fl" x="126" y="84" fill="#E8702A">+1</text>
+      <circle class="rip" cx="104" cy="104" r="12"/><circle class="fing" cx="104" cy="104" r="13"/>
+    </svg>
+    <svg class="art" viewBox="0 0 260 170" aria-hidden="true" hidden>
+      <g class="zoomg">
+        <circle class="plate" cx="130" cy="85" r="76"/><circle class="rim" cx="130" cy="85" r="68"/>
+        <circle class="t" cx="128" cy="78" r="3"/><circle class="t" cx="138" cy="86" r="2.6"/><circle class="m" cx="133" cy="72" r="2"/><circle class="t" cx="122" cy="90" r="2.4"/><circle class="m" cx="144" cy="76" r="2"/><circle class="t" cx="96" cy="112" r="4"/><circle class="m" cx="170" cy="60" r="3"/>
+        <rect class="bx o" x="124" y="74" width="8" height="8" style="stroke-width:1.5"/><rect class="bx o" x="134.5" y="82.5" width="7" height="7" style="stroke-width:1.5"/><rect class="bx o" x="118.5" y="86.5" width="7" height="7" style="stroke-width:1.5"/><rect class="bx o" x="90" y="106" width="12" height="12"/>
+      </g>
+      <circle class="fing f1" cx="118" cy="92" r="12"/><circle class="fing f2" cx="148" cy="72" r="12"/>
+    </svg>
+    <svg class="art" viewBox="0 0 260 170" aria-hidden="true" hidden>
+      <defs><clipPath id="lpc"><circle cx="124" cy="46" r="32"/></clipPath></defs>
+      <circle class="plate" cx="130" cy="85" r="76"/><circle class="rim" cx="130" cy="85" r="68"/>
+      <circle class="m" cx="112" cy="98" r="3"/><circle class="t" cx="160" cy="70" r="4"/><circle class="m" cx="150" cy="120" r="3"/><circle class="t" cx="86" cy="78" r="4"/>
+      <circle class="m" cx="124" cy="106" r="5"/>
+      <rect class="bx l-box" x="115" y="97" width="18" height="18"/>
+      <circle class="hold" cx="124" cy="106" r="17"/><circle class="fing f4" cx="124" cy="106" r="13"/>
+      <g class="lp">
+        <g clip-path="url(#lpc)">
+          <rect x="92" y="14" width="64" height="64" fill="#EDE6D3"/>
+          <circle cx="124" cy="46" r="13" fill="#A86A98"/><circle cx="100" cy="28" r="6" fill="#A86A98"/><circle cx="150" cy="66" r="7" fill="#3E7F8A"/>
+          <rect class="bx l-box" x="106" y="28" width="36" height="36" style="stroke-width:3"/>
+          <path d="M124 36v5M124 51v5M114 46h5M129 46h5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </g>
+        <circle cx="124" cy="46" r="32" fill="none" stroke="#fff" stroke-width="3.5"/>
+      </g>
+      <text class="fl4" x="146" y="96" fill="#587270" style="font-weight:700;font-size:15px;opacity:0">−1</text>
+    </svg>
+    <svg class="art" viewBox="0 0 260 170" aria-hidden="true" hidden>
+      <circle class="plate" cx="138" cy="86" r="62"/><circle class="rim" cx="138" cy="86" r="56"/>
+      <circle class="t" cx="112" cy="64" r="4"/><circle class="m" cx="150" cy="58" r="3"/><circle class="t" cx="160" cy="104" r="4.5"/><circle class="m" cx="118" cy="110" r="3"/><circle class="t" cx="96" cy="92" r="3.5"/><circle class="t" cx="186" cy="80" r="3.5"/>
+      <g class="mv"><circle class="ring" cx="138" cy="86" r="62"/><circle cx="182" cy="130" r="7" fill="#fff" stroke="#0E6B68" stroke-width="2.5"/></g>
+      <circle class="fing mvf" cx="138" cy="86" r="12"/>
+    </svg>
+    <h2 id="coachT"></h2>
+    <p id="coachP"></p>
+    <div class="coach-nav">
+      <div class="dots" id="dots"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="acts">
+        <button type="button" id="coachPrev">戻る</button>
+        <button type="button" id="coachNext" class="primary">次へ</button>
+      </div>
+    </div>
+    <div class="src"><a href="https://github.com/oishisa-0ss/styl/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a> ・ <a href="https://github.com/oishisa-0ss/styl/tree/main/web-counter" target="_blank" rel="noopener">GitHub</a></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>
