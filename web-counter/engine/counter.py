@@ -47,7 +47,9 @@ def load_photo(path: str) -> Image.Image:
 def detect_dish(im: Image.Image) -> Dish | None:
     w, h = im.size
     k = 800 / max(w, h)
-    g = cv2.cvtColor(np.asarray(im.resize((round(w * k), round(h * k)))), cv2.COLOR_RGB2GRAY)
+    size = (round(w * k), round(h * k))
+    small = cv2.resize(np.asarray(im), size, interpolation=cv2.INTER_AREA) if k < 1 else np.asarray(im.resize(size))
+    g = cv2.cvtColor(small, cv2.COLOR_RGB2GRAY)
     g = cv2.medianBlur(g, 5)
     short = min(g.shape)
     cs = cv2.HoughCircles(g, cv2.HOUGH_GRADIENT, dp=1.5, minDist=short, param1=80, param2=40,
