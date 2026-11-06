@@ -1202,6 +1202,7 @@ $('coachNext').addEventListener('click', () => { if (coachI >= COACH.length - 1)
 $('coach').addEventListener('click', e => { if (e.target === $('coach')) closeCoach(); });
 
 document.addEventListener('keydown', e => {
+  if (!$('camSheet').hidden) { if (e.key === 'Escape') closeCam(); return; }
   if (!$('coach').hidden) {
     if (e.key === 'Escape') closeCoach();
     else if (e.key === 'ArrowRight') $('coachNext').click();
@@ -1362,6 +1363,109 @@ for (const id of ['camIn', 'fileIn']) {
     e.target.value = '';
     if (f) startWith(f);
   });
+}
+const nativeCapture = (() => {
+  const ua = navigator.userAgent || '';
+  if (/Android|iPhone|iPad|iPod/i.test(ua)) return true;
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return true;
+  return !!(navigator.userAgentData && navigator.userAgentData.mobile);
+})();
+const liveCam = !nativeCapture && !framed && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && window.isSecureContext;
+let camStream = null, camDevices = [], camIdx = -1, camSeq = 0, camFocus = null;
+function stopCam() {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = null;
+  $('camVideo').srcObject = null;
+}
+function camFail(msg) {
+  stopCam();
+  camIdx = -1;
+  $('camVideo').hidden = true;
+  $('camShot').disabled = true;
+  $('camSwitch').hidden = true;
+  $('camPick').hidden = false;
+  $('camNote').textContent = msg;
+  $('camPick').focus();
+}
+async function startCam(deviceId) {
+  const seq = ++camSeq;
+  stopCam();
+  $('camShot').disabled = true;
+  $('camVideo').hidden = false;
+  $('camPick').hidden = true;
+  $('camNote').textContent = 'カメラを起動しています…';
+  const res = { width: { ideal: 3840 }, height: { ideal: 2160 } };
+  const video = deviceId ? { deviceId: { exact: deviceId }, ...res } : { facingMode: 'environment', ...res };
+  let s;
+  try { s = await navigator.mediaDevices.getUserMedia({ video, audio: false }); }
+  catch (e) {
+    if (seq !== camSeq) return;
+    const n = e && e.name;
+    if (deviceId && (n === 'NotFoundError' || n === 'OverconstrainedError')) { camIdx = -1; startCam(null); return; }
+    if (n === 'NotAllowedError' || n === 'SecurityError') camFail('カメラの使用が許可されていません。アドレスバーの左のボタンからカメラを許可するか、撮った写真を選んでください。');
+    else if (n === 'NotFoundError' || n === 'OverconstrainedError') camFail('カメラが見つかりませんでした。撮った写真を選んでください。');
+    else if (n === 'NotReadableError' || n === 'AbortError') camFail('カメラを起動できませんでした。ほかのアプリでカメラを使っていないか確かめてください。');
+    else camFail('カメラを起動できませんでした。撮った写真を選んでください。');
+    return;
+  }
+  if (seq !== camSeq || $('camSheet').hidden) { s.getTracks().forEach(t => t.stop()); return; }
+  camStream = s;
+  s.getVideoTracks().forEach(t => t.addEventListener('ended', () => {
+    if (seq === camSeq && camStream === s) camFail('カメラが切断されました。カメラをつなぎ直して開き直すか、撮った写真を選んでください。');
+  }));
+  const v = $('camVideo');
+  v.srcObject = s;
+  try { await v.play(); } catch (_) {}
+  try {
+    camDevices = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const trk = s.getVideoTracks()[0];
+    const id = trk && trk.getSettings ? trk.getSettings().deviceId : '';
+    camIdx = Math.max(0, camDevices.findIndex(d => d.deviceId === id));
+  } catch (_) { camDevices = []; }
+  if (seq !== camSeq) return;
+  $('camSwitch').hidden = camDevices.length < 2;
+  $('camShot').disabled = false;
+  $('camNote').textContent = 'シャーレ全体が入るように、真上から撮影してください。';
+  $('camShot').focus();
+}
+function openCam() {
+  if (busy) return;
+  camFocus = document.activeElement;
+  $('camSheet').hidden = false;
+  startCam(camDevices[camIdx] ? camDevices[camIdx].deviceId : null);
+}
+function closeCam() {
+  camSeq++;
+  stopCam();
+  $('camSheet').hidden = true;
+  if (camFocus && camFocus.focus) camFocus.focus();
+}
+function shootCam() {
+  const v = $('camVideo');
+  if (!camStream || !v.videoWidth) return;
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  $('camShot').disabled = true;
+  const seq = camSeq;
+  c.toBlob(b => {
+    if (seq !== camSeq) return;
+    closeCam();
+    if (b) startWith(b);
+    else showErr('写真を撮影できませんでした。もう一度お試しください。');
+  }, 'image/jpeg', 0.95);
+}
+if (liveCam) {
+  $('camBtn').addEventListener('click', e => { e.preventDefault(); openCam(); });
+  $('camClose').addEventListener('click', closeCam);
+  $('camShot').addEventListener('click', shootCam);
+  $('camSwitch').addEventListener('click', () => {
+    if (camDevices.length < 2) return;
+    camIdx = (camIdx + 1) % camDevices.length;
+    startCam(camDevices[camIdx].deviceId);
+  });
+  $('camPick').addEventListener('click', () => { closeCam(); $('fileIn').click(); });
+  $('camSheet').addEventListener('click', e => { if (e.target === $('camSheet')) closeCam(); });
 }
 $('sampleBtn').addEventListener('click', async () => {
   try { const r = await fetch('samples/sample.jpg'); if (!r.ok) throw new Error(); startWith(await r.blob()); }

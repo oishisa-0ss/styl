@@ -285,7 +285,7 @@ input[type=range]{width:100%;accent-color:var(--green);margin:0}
 .panel-head{padding:14px 0 8px;border-bottom:1.5px solid var(--rule)}
 .panel h2,.coach-card h2{margin:0;font-size:19px;font-weight:900;letter-spacing:.05em;text-wrap:balance}
 .panel img{display:block;width:100%;border:1px solid var(--rule)}
-.fname{font-size:12px;font-weight:500;color:var(--muted);word-break:break-all}
+.panel video{display:block;width:100%;max-height:62vh;aspect-ratio:4/3;object-fit:contain;background:#000;border:1px solid var(--rule)}.fname{font-size:12px;font-weight:500;color:var(--muted);word-break:break-all}
 .cmt{display:grid;gap:4px}
 .cmt label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}
 .cmt small{font-size:12px;font-weight:500}
@@ -492,7 +492,7 @@ input[type=range]{width:100%;accent-color:var(--green);margin:0}
         <p class="start-t">シャーレの写真から大腸菌を数えます</p>
         <p class="start-s">真上からシャーレ全体を撮影</p>
         <div class="start-acts">
-          <label class="big-btn primary" for="camIn"><svg class="ic"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.6-2.2h5.4L16.3 7h2.2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle class="shutter" cx="12" cy="12.8" r="3.4"/></svg>写真を撮る</label>
+          <label class="big-btn primary" for="camIn" id="camBtn"><svg class="ic"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.6-2.2h5.4L16.3 7h2.2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle class="shutter" cx="12" cy="12.8" r="3.4"/></svg>写真を撮る</label>
           <label class="big-btn" for="fileIn"><svg class="ic"><use href="#i-image"/></svg>写真を選ぶ</label>
         </div>
         <button type="button" class="link-btn" id="sampleBtn">サンプルの写真で試す</button>
@@ -599,6 +599,20 @@ input[type=range]{width:100%;accent-color:var(--green);margin:0}
       <button type="button" id="sheetClose">閉じる</button>
       <button type="button" id="outShare" hidden><svg class="ic"><use href="#i-share"/></svg>共有</button>
       <a id="outDl" class="primary" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><g class="ar"><path d="M12 3.5v11"/><path d="m7.5 10 4.5 4.5 4.5-4.5"/></g><path d="M5 20h14"/></svg>保存する</a>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="camSheet" role="dialog" aria-modal="true" aria-labelledby="camT" hidden>
+  <div class="panel">
+    <div class="panel-head"><h2 id="camT">カメラで撮影</h2></div>
+    <video id="camVideo" playsinline muted autoplay></video>
+    <p class="note" id="camNote" role="status"></p>
+    <div class="acts">
+      <button type="button" id="camClose">やめる</button>
+      <button type="button" id="camSwitch" hidden>カメラを切り替え</button>
+      <button type="button" id="camPick" hidden><svg class="ic"><use href="#i-image"/></svg>写真を選ぶ</button>
+      <button type="button" class="primary" id="camShot" disabled><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.6-2.2h5.4L16.3 7h2.2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.8" r="3.4"/></svg>撮影する</button>
     </div>
   </div>
 </div>
